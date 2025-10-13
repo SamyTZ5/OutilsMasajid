@@ -1,1070 +1,259 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>DC Map - Orange Business</title>
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.1/MarkerCluster.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.1/MarkerCluster.Default.css">
-
-<style>
-  :root{
-    --brand:#ff7900;--ink:#111;--muted:#666;--card:#fff;--line:#e9e9e9;--soft:#fafafa;--bg:#f8f8f8;
-    --shadow:0 8px 24px rgba(0,0,0,.06);
-    --green:#2ecc71;--gray:#9aa3b2;--red:#e74c3c;
-    --band:#ffe9d6;
-    --distBg:#f3f4f6; /* gris léger pour Distance */
-  }
-  :root.dark{
-    --bg:#0f1115; --ink:#e6e6e6; --muted:#a4a6ad; --card:#151923; --line:#232838; --soft:#101523; --shadow:0 10px 28px rgba(0,0,0,.45);
-    --gray:#7c8799;
-    --band:#2a2016;
-    --distBg:#171c27; /* gris sombre pour Distance */
-  }
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:Helvetica,Arial,sans-serif}
-  #map{height:68vh;border-bottom:1px solid var(--line)}
-  .container{max-width:1400px;margin:12px auto;padding:0 12px}
-
-  /* ===== Bandeau unifié ===== */
-  .mega-band{max-width:1400px;margin:12px auto;padding:0 10px}
-  .mega-shell{
-    display:grid;grid-template-columns:1fr 2fr 1fr;gap:12px;
-    background:var(--band);border:1px solid #ffc48f;border-radius:14px;box-shadow:var(--shadow);padding:12px;
-    align-items:stretch;
-  }
-  @media (max-width:1100px){.mega-shell{grid-template-columns:1fr}}
-  .block{display:flex;align-items:center;justify-content:center;min-width:0}
-
-  /* Bloc gauche : logo + sliders empilés */
-  .brand-col{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
-  .brand-link{
-    display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);
-    background:linear-gradient(180deg,#ffe0c2,#ffc792);border:1px solid #ffb06a;border-radius:12px;padding:10px 14px;
-    box-shadow:0 6px 16px rgba(255,121,0,0.12);
-  }
-  .brand-link img{height:40px;width:auto}
-
-  .seg-col{display:flex;flex-direction:column;gap:8px;justify-content:center;align-items:center;width:100%}
-  .seg{
-    position:relative;display:inline-grid;grid-template-columns:1fr 1fr;align-items:center;
-    background:#eee;border:1px solid #ddd;border-radius:999px;min-width:140px;height:34px;
-    cursor:pointer;user-select:none;
-  }
-  .seg > span{display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;padding:0 10px;color:#555}
-  .seg .knob{
-    position:absolute;top:2px;left:2px;width:calc(50% - 4px);height:30px;border-radius:999px;background:#fff;
-    box-shadow:0 2px 6px rgba(0,0,0,.18);transition:transform .22s cubic-bezier(.22,.61,.36,1);
-  }
-  .seg[data-on="right"] .knob{transform:translateX(100%)}
-  :root.dark .seg{background:#1a2030;border-color:#2a3146}
-  :root.dark .seg > span{color:#cbd3eb}
-  :root.dark .seg .knob{background:#0f121b}
-
-  /* Bloc centre */
-  .center-col{display:grid;grid-template-columns:1fr;gap:10px;align-items:start;min-width:0}
-  .row-controls{
-    display:grid;
-    grid-template-columns:auto auto auto; /* label | dropdown | reset */
-    grid-auto-rows:auto;
-    gap:10px;align-items:center;min-width:0
-  }
-  #siteDropdown{width:clamp(180px,25vw,260px)}
-  /* Champ recherche en dessous; s’étend du label jusqu’avant le bouton reset */
-  #searchInput{grid-column:1 / 3; width:100%; min-width:260px;}
-  @media (max-width:900px){
-    .row-controls{grid-template-columns:1fr}
-    #searchInput{grid-column:1 / 2}
-  }
-
-  select,button,input{border:1px solid #ddd;border-radius:10px;padding:8px 12px;font-size:14px;background:#fff}
-  :root.dark select,:root.dark button,:root.dark input{background:#0f121b;border-color:#2a3146;color:var(--ink)}
-  .btn-orange{background:var(--brand)!important;color:#fff!important;border:none;font-weight:700;cursor:pointer}
-  .btn-ghost{background:#fff;border:1px solid #ddd;color:#333;cursor:pointer}
-  :root.dark .btn-ghost{background:#131828;border-color:#2a3146;color:#dfe3ee}
-  .btn-black{background:#111!important;color:#fff!important;border:none!important;font-weight:700;border-radius:10px;cursor:pointer}
-
-  /* Data view + message */
-  .view-wrap{display:grid;grid-template-columns:240px 1fr;gap:12px;align-items:stretch}
-  @media (max-width:900px){.view-wrap{grid-template-columns:1fr}}
-  .view-buttons{display:flex;flex-direction:column;gap:6px}
-  .view-btn{width:100%;font-weight:800;border-width:2px;font-size:13px;padding:6px 10px;border-radius:10px}
-  .view-open{background:#eafaf0;border-color:#c3e6cb;color:#1e7e34}
-  .view-frozen{background:#eef2f6;border-color:#d1d7e0;color:#445064}
-  .view-closed{background:#fdecea;border-color:#f5c2c7;color:#b02a1a}
-  :root.dark .view-open{background:#132217;border-color:#2e6b46;color:#9dd6b3}
-  :root.dark .view-frozen{background:#151b25;border-color:#334056;color:#c0c7d3}
-  :root.dark .view-closed{background:#2a1716;border-color:#7a2f2d;color:#f1a6a2}
-  .warn-box{
-    border:1px dashed #cc7a00;background:linear-gradient(180deg, rgba(255,205,133,.25), rgba(255,236,205,.18));
-    color:#7a3e00;border-radius:12px;padding:8px;display:flex;align-items:center;line-height:1.35;font-size:12px
-  }
-  :root.dark .warn-box{border-color:#a35b00;background:linear-gradient(180deg, rgba(163,91,0,.18), rgba(163,91,0,.08));color:#ffd9a3}
-
-  /* Bloc droit : SharePoint */
-  .right-col{display:flex;align-items:center;justify-content:flex-end}
-  .sp-link{
-    display:flex;align-items:center;gap:10px;text-decoration:none;color:#1a120a;
-    background:linear-gradient(180deg,#ffe0c2,#ffc792);border:1px solid #ffb06a;border-radius:12px;padding:10px 14px;
-    box-shadow:0 6px 16px rgba(255,121,0,0.12);justify-content:center
-  }
-  .sp-pill{background:var(--brand);color:#fff;font-weight:800;border-radius:999px;padding:3px 10px;font-size:11px}
-  :root.dark .sp-link{background:linear-gradient(180deg,#3b2b1b,#58422c);border-color:#82562d;color:#fff}
-
-  /* Cards, KPI, liste */
-  .panels-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media (max-width:1024px){.panels-grid{grid-template-columns:1fr}}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
-  .card-h{background:var(--brand);color:#fff;font-weight:800;padding:12px 16px}
-  .card-b{padding:14px 16px}
-  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-  .kpi{background:var(--soft);border:1px solid #eee;border-radius:10px;padding:10px}
-  :root.dark .kpi{border-color:#222a3f}
-  .kpi .label{font-size:12px;color:var(--muted)} .kpi .value{font-size:22px;font-weight:800}
-  .list{margin-top:12px}
-  .list .item{margin:6px 0} .list .top{display:flex;justify-content:space-between;font-size:14px}
-  .bar{height:8px;background:#ffefe2;border-radius:6px;overflow:hidden}
-  :root.dark .bar{background:#2a2030}
-  .bar>i{display:block;height:100%;background:var(--brand);width:0%}
-
-  /* Pins */
-  .pin{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
-  .pin.green{background:var(--green)} .pin.gray{background:var(--gray)} .pin.red{background:var(--red)}
-
-  /* ======= Distance block (gris léger) ======= */
-  .distance-card{
-    background:var(--distBg);
-    border:1px solid var(--line);
-    border-radius:12px;
-    padding:12px;
-    margin-top:4px;
-  }
-  .distance-card .row{ align-items:flex-end; }
-  /* Largeurs alignées */
-  .distance-card .autocomplete{
-    flex: 2 1 520px;
-    min-width: 420px;
-  }
-  .distance-card .dc-chosen-wrap{
-    flex: 2 1 520px;
-    min-width: 420px;
-  }
-  .distance-card .input#clientAddress,
-  .distance-card .input#dcPicker2{
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    font-size: 15px;
-    padding: 10px 14px;
-  }
-  @media (max-width: 1200px){
-    .distance-card .autocomplete,
-    .distance-card .dc-chosen-wrap{
-      flex: 1 1 100%;
-      min-width: 100%;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Générateur d’affiches Janaza — A4 TV</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:#f7f3ec;         /* papier */
+      --ink:#1e2a3b;        /* texte */
+      --gold:#8b6c2a;       /* nom + mosquée */
+      --accent:#0c445c;     /* bleu canard */
+      --muted:#6b7280;      /* gris */
+      --red:#c81e1e;        /* exporter */
+      --tile:#738496;       /* motifs */
     }
-  }
-  .pra-wrap{display:flex;align-items:center;gap:8px}
-  .pra-ind{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:800;white-space:nowrap;border:1px solid transparent}
-  .pra-ind.ok{background:#eafaf0;color:#1e7e34;border-color:#c3e6cb}
-  .pra-ind.nok{background:#fdecea;color:#b02a1a;border-color:#f5c2c7}
-  :root.dark .pra-ind.ok{background:#132217;color:#9dd6b3;border-color:#2e6b46}
-  :root.dark .pra-ind.nok{background:#2a1716;color:#f1a6a2;border-color:#7a2f2d}
-  .seg-mini{min-width:180px} /* pour le PRA mode */
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,Roboto,sans-serif;
+      color:var(--ink);
+      background:linear-gradient(180deg,#fbfaf8,#f3efe8);
+    }
+    .app{
+      display:grid;
+      grid-template-columns:380px 1fr;
+      gap:20px;
+      min-height:100vh;
+      padding:18px;
+    }
+    @media(max-width:1100px){.app{grid-template-columns:1fr}}
 
-  /* Footer */
-  footer{max-width:1400px;margin:18px auto 26px auto;padding:0 12px;color:var(--muted);font-size:12px;text-align:right}
-</style>
+    /* --------- panneau --------- */
+    .panel{
+      background:white;
+      border-radius:14px;
+      box-shadow:0 10px 30px rgba(16,24,40,.08);
+      padding:16px;
+    }
+    .panel h2{margin:0 0 10px;font-size:18px}
+    label{font-size:12px;color:#475569;margin:8px 0 6px;display:block;font-weight:600}
+    input,select{
+      width:100%;
+      padding:10px 12px;
+      border:1px solid #e5e7eb;
+      border-radius:10px;
+      font-size:14px;
+      background:#fff;
+    }
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .btn{
+      appearance:none;border:0;border-radius:12px;
+      padding:10px 14px;font-weight:700;background:var(--accent);color:white;cursor:pointer
+    }
+    .btn.red{background:var(--red)}
+
+    /* --------- preview TV --------- */
+    .preview{display:flex;justify-content:center;align-items:flex-start;gap:28px;padding:12px;flex-wrap:wrap}
+    .tv{
+      position:relative;background:#0b0e12;border-radius:14px;padding:18px;
+      box-shadow:0 20px 50px rgba(0,0,0,.35)
+    }
+    .tv:after{
+      content:"";position:absolute;bottom:-26px;left:50%;
+      width:140px;height:20px;background:#0b0e12;border-radius:10px 10px 4px 4px;transform:translateX(-50%)
+    }
+
+    /* --------- toile A4 --------- */
+    .stage{
+      position:relative;
+      overflow:visible;         /* IMPORTANT: pour voir la rosace à moitié hors cadre */
+      background:var(--bg);
+      border-radius:12px;
+      display:flex;justify-content:center;align-items:center;
+      z-index:0;                /* base */
+    }
+    .A4{width:1120px;height:720px}
+    @media(max-width:1100px){.A4{width:900px;height:579px}}
+
+    /* bande décor droite (réduite) */
+    .A4 .tile{
+      position:absolute;right:0;top:0;height:100%;width:180px;
+      opacity:.20;filter:contrast(120%);
+      z-index:1;                /* au-dessus du fond, sous le texte */
+      background-color:transparent !important;
+    }
+    .A4 .tile:before{
+      content:"";position:absolute;inset:0;--c:var(--tile);
+      background:
+        conic-gradient(from 45deg at 25% 25%, transparent 0 75%, var(--c) 0 100%) 0 0/42px 42px,
+        conic-gradient(from -45deg at 75% 25%, transparent 0 75%, var(--c) 0 100%) 21px 0/42px 42px,
+        conic-gradient(from 135deg at 25% 75%, transparent 0 75%, var(--c) 0 100%) 0 21px/42px 42px,
+        conic-gradient(from -135deg at 75% 75%, transparent 0 75%, var(--c) 0 100%) 21px 21px/42px 42px;
+    }
+
+    /* rosace gauche (moitié visible, centrée verticalement) */
+    .rosette-bl{
+      position:absolute;top:50%;left:-110px; /* -110px = moitié de 220px = moitié visible */
+      width:220px;height:auto;
+      opacity:.9;           /* visible même sans mix-blend */
+      filter:brightness(.85) contrast(1.05);
+      pointer-events:none;
+      transform:translateY(-50%);
+      z-index:1;            /* même plan que la bande, sous le texte */
+    }
+
+    /* contenu au-dessus des décors */
+    .content{
+      position:relative; z-index:2;
+      text-align:center; max-width:1000px; margin:0 auto;
+      padding:70px 240px 100px 140px; /* top right bottom left */
+    }
+
+    /* typo */
+    .top-ar{font-family:Amiri,serif;font-size:48px;margin:0 0 14px;direction:rtl;color:#1b2a44}
+    .headline{font-size:19px;margin:12px 0 14px;letter-spacing:.3px}
+    .name{font-size:54px;color:var(--gold);font-weight:800;margin:16px 0}
+    .duaa{font-family:Amiri,serif;font-size:28px;margin:6px 0 20px;color:#0f2b3b}
+    .when{font-size:21px;margin:16px 0}
+    .mosquee{font-weight:800;font-size:24px;color:var(--gold);margin-top:10px}
+    .address{opacity:.95;font-weight:600;font-size:18px}
+    .footer-ar{font-family:Amiri,serif;font-size:26px;margin-top:20px}
+
+    /* coordonnées tout en bas, petit, non gras */
+    .contact{
+      position:absolute;left:0;right:0;bottom:12px;
+      text-align:center;font-size:14px;font-weight:400;color:#1f2937;opacity:.7
+    }
+
+    .logo{position:absolute;left:26px;top:22px;font-weight:900;opacity:.6}
+  </style>
 </head>
 <body>
+  <div class="app">
+    <section class="panel">
+      <h2>Paramètres</h2>
+      <label>Nom</label><input id="nom" value="ZAABOULI" />
+      <label>Prénom</label><input id="prenom" value="Hicham" />
+      <label>Sexe</label>
+      <select id="sexe"><option value="H">Homme</option><option value="F">Femme</option></select>
+      <label>Date (jj/mm/aaaa)</label><input id="date" type="date" />
+      <label>Prière</label>
+      <select id="priere">
+        <option>Dohr</option><option>Asr</option><option>Maghrib</option><option>Isha</option><option>Fajr</option>
+      </select>
+      <label>Mosquée</label><input id="mosquee" value="El-Mohsinine de Canteleu" />
+      <label>Adresse</label><input id="adresse" value="36 Anc. Rte de Duclair, 76380 Canteleu" />
+      <div class="row">
+        <button class="btn" id="apply">Mettre à jour</button>
+        <button class="btn red" id="exportPng">Exporter en PNG</button>
+      </div>
+      <small style="color:#6b7280">Astuce : si l’export PNG ne montre pas la rosace (CORS), télécharge l’image et mets un chemin local, ou héberge-la sur ton domaine.</small>
+    </section>
 
-<div id="map"></div>
+    <section class="preview">
+      <div class="tv">
+        <div id="posterA4" class="stage A4">
+          <!-- bande droite -->
+          <div class="tile"></div>
 
-<!-- ===== BANDEAU UNIFIÉ ===== -->
-<div class="mega-band">
-  <div class="mega-shell">
-    <!-- Gauche -->
-    <div class="block">
-      <div class="brand-col">
-        <a href="mailto:proxi-team@orange.com" class="brand-link" id="brandLink" title="Contact Proxi-Team">
-          <img src="https://i.ibb.co/twR5qBzV/dcmap-logo.png" alt="DC MAP" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block'">
-          <span class="brand-fallback" style="display:none">DC MAP</span>
-        </a>
-        <div class="seg-col">
-          <!-- Toggle Langue -->
-          <div class="seg" id="langSeg" data-on="left" aria-label="FR / EN">
-            <div class="knob"></div>
-            <span>FR</span><span>EN</span>
+          <!-- rosace gauche (image fournie) -->
+          <img
+            class="rosette-bl"
+            src="https://i.ibb.co/CK0STnWk/image.png"
+            alt="Rosace gauche"
+            crossorigin="anonymous"
+          />
+
+          <!-- contenu -->
+          <div class="content">
+            <div class="logo">AMCC</div>
+            <h1 class="top-ar">إِنَّا لِلَّهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ</h1>
+            <p class="headline">Une <strong>Salat Al-Janaza</strong> (prière funéraire) est organisée pour :</p>
+            <h2 class="name" id="fullnameA4">Monsieur Hicham ZAABOULI</h2>
+            <p class="duaa" id="duaaA4">رحمهُ الله</p>
+            <div class="when" id="whenA4"></div>
+            <div class="mosquee" id="mosqueeA4"></div>
+            <div class="address" id="adresseA4"></div>
+            <div class="footer-ar">بارك الله فيكم</div>
           </div>
-          <!-- Toggle Thème -->
-          <div class="seg" id="themeSeg" data-on="left" aria-label="Light / Dark">
-            <div class="knob"></div>
-            <span>☀️</span><span>🌙</span>
-          </div>
+
+          <!-- coordonnées tout en bas -->
+          <div class="contact" id="contactA4">association@amcc.fr | 07 XX XX XX XX</div>
         </div>
       </div>
-    </div>
-
-    <!-- Centre -->
-    <div class="block" style="flex-direction:column;align-items:stretch">
-      <div class="center-col">
-        <div class="row-controls">
-          <label id="siteLabel" for="siteDropdown" style="white-space:nowrap">Sélectionner le DataCenter à consulter :</label>
-          <select id="siteDropdown"><option value="">Sélectionner un site</option></select>
-          <button id="resetButton" class="btn-orange">Réinitialiser</button>
-          <input id="searchInput" class="input" type="search" placeholder="Rechercher un DC (nom, fournisseur, pays…)" aria-label="Rechercher des data centers">
-        </div>
-
-        <div class="view-wrap">
-          <div class="view-buttons">
-            <button id="btnViewOpen"   class="view-btn view-open">Open (Major/Opportunistic)</button>
-            <button id="btnViewFrozen" class="view-btn view-frozen">Frozen (Operations)</button>
-            <button id="btnViewClosed" class="view-btn view-closed">Closed (Operations)</button>
-          </div>
-          <div class="warn-box" id="internalWarn">
-            ⚠️ <b style="margin:0 6px">Information interne uniquement</b> — Les Data Centers marqués comme <i>Frozen</i> ou <i>Fermés</i> ne peuvent pas être proposés aux clients. Ces informations sont destinées exclusivement aux opérations internes et aux démarches d’urgence liées aux sites concernés.
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Droite -->
-    <div class="block right-col">
-      <a id="spLink" class="sp-link" href="https://orange0.sharepoint.com/sites/OBDCProximityServicesFieldOperationsRules" target="_blank" rel="noopener">
-        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px">
-          <div id="spTitle" style="font-weight:800">DataCenter Proximity</div>
-          <span class="sp-pill" id="spPill">SharePoint</span>
-        </div>
-        <span class="sp-icon">↗</span>
-      </a>
-    </div>
+    </section>
   </div>
-</div>
 
-<div class="container">
-  <div class="panels-grid">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
 
-    <!-- Filtres -->
-    <div class="card">
-      <div class="card-h" id="filtersHeader">Filtres d'affichage</div>
-      <div class="card-b">
-        <div class="row" style="display:flex;gap:12px;flex-wrap:wrap">
-          <div>
-            <label id="labelSupplier" for="supplierFilter">Afficher par fournisseur</label><br>
-            <select id="supplierFilter" class="select"><option value="">Tous les fournisseurs</option></select>
-          </div>
-          <div>
-            <label id="labelRegion" for="regionFilter">Afficher par région</label><br>
-            <select id="regionFilter" class="select"><option value="">Toutes les régions</option></select>
-          </div>
-          <div>
-            <label id="labelCountry" for="countryFilter">Afficher par pays</label><br>
-            <select id="countryFilter" class="select"><option value="">Tous les pays</option></select>
-          </div>
-        </div>
-
-        <div class="export-row" style="margin-top:12px;display:flex;align-items:center;gap:10px">
-          <button id="exportBtn" class="btn-black" title="Faire un extract (.xlsx) de ma sélection">Faire un extract (.xlsx) de ma sélection</button>
-        </div>
-
-        <div style="margin-top:8px"><em id="noteText" class="small-note">NB : pour avoir la liste de tous les DC proposés, faire l'extract en enlevant tous les filtres.</em></div>
-
-        <hr style="border:none;height:1px;background:#f1f1f1;margin:16px 0">
-
-        <!-- supplier details -->
-        <div style="display:flex;align-items:center;gap:12px">
-          <img id="supLogo" style="height:36px;max-width:140px;object-fit:contain;border-radius:4px;background:#fff;display:none" alt="">
-          <div>
-            <div id="supName" style="font-weight:800">Tous les fournisseurs</div>
-            <div id="supLink"></div>
-            <small id="supStats"></small>
-          </div>
-        </div>
-
-        <!-- ===== Distance (fond gris) ===== -->
-        <hr style="border:none;height:1px;background:#f1f1f1;margin:16px 0">
-        <div class="section-title" id="routeHeader">Distance Client — DC</div>
-
-        <div class="distance-card">
-          <div class="row" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-            <!-- Adresse client -->
-            <div class="autocomplete">
-              <label id="clientAddrLabel" for="clientAddress">Adresse du client</label><br>
-              <div style="display:flex;gap:8px">
-                <input id="clientAddress" class="input" placeholder="Commencez à saisir une adresse">
-                <button id="useMyLoc" class="btn-ghost" title="Utiliser ma position">📍</button>
-              </div>
-              <div id="addrSuggest" class="suggestions" style="display:none"></div>
-            </div>
-
-            <!-- DC choisi -->
-            <div class="dc-chosen-wrap">
-              <label id="dcPickLabel" for="dcPicker2">Datacenter choisi</label><br>
-              <input id="dcPicker2" class="input" list="dcList2" placeholder="Tapez un nom de DC ou un code Orange">
-              <datalist id="dcList2"></datalist>
-            </div>
-
-            <!-- PRA: mode + valeur + statut -->
-            <div style="flex:1 1 320px;min-width:280px">
-              <label id="praLabel" for="praKm">PRA</label><br>
-              <div class="pra-wrap">
-                <!-- Segmented mini: max/min -->
-                <div class="seg seg-mini" id="praModeSeg" data-on="left" title="Au maximum / Au minimum">
-                  <div class="knob"></div>
-                  <span>Au max</span><span>Au min</span>
-                </div>
-                <input id="praKm" class="input" type="number" min="1" step="1" value="100" style="width:120px">
-                <span id="praStatus" class="pra-ind" title="Statut PRA">—</span>
-              </div>
-              <small id="praHint" class="small-note">Règle : distance ≤ / ≥ au seuil (selon le mode)</small>
-            </div>
-
-            <div style="flex:0 0 auto;display:flex;gap:8px">
-              <button id="routeBtn" class="btn-orange">Calculer</button>
-              <button id="routeClear" class="btn-ghost">Réinitialiser</button>
-            </div>
-          </div>
-
-          <div class="row" style="margin-top:8px">
-            <div id="routeStats" class="small-note"></div>
-          </div>
-          <div class="small-note" id="routeDisclaimer" style="margin-top:8px;display:none"></div>
-          <div class="small-note" id="geoNote" style="margin-top:6px;display:none"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Synthèse -->
-    <div class="card">
-      <div class="card-h" id="synthesisHeader">Synthèse</div>
-      <div class="card-b">
-        <div class="kpi-grid">
-          <div class="kpi"><div class="label"><span id="kpi_dc_label">DC affichés</span></div><div id="k_total" class="value">—</div></div>
-          <div class="kpi"><div class="label"><span id="kpi_suppliers_label">Fournisseurs</span></div><div id="k_suppliers" class="value">—</div></div>
-          <div class="kpi"><div class="label"><span id="kpi_countries_label">Pays</span></div><div id="k_countries" class="value">—</div></div>
-          <div class="kpi"><div class="label"><span id="kpi_types_label">Majeur / Opportuniste</span></div><div id="k_types" class="value">—</div></div>
-        </div>
-        <div class="list"><strong id="topCountriesTitle">Top pays</strong><div id="listCountries"></div></div>
-        <div class="list"><strong id="topSuppliersTitle">Top fournisseurs</strong><div id="listSuppliers"></div></div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<footer>© 2025 — DC Team | GDO • v1.6.4</footer>
-
-<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.1/leaflet.markercluster.js"></script>
-
-<script>
-document.addEventListener("DOMContentLoaded",function(){
-  const EXCEL_URL = './GDO_DataCenter_List.xlsx';
-  const url = EXCEL_URL + '?v=' + Date.now();
-
-  /* === i18n (FR par défaut) === */
-  const i18n={
-    fr:{siteLabel:"Sélectionner le DataCenter à consulter :",select_site:"Sélectionner un site",reset:"Réinitialiser",
-        search_ph:"Rechercher un DC (nom, fournisseur, pays…)",
-        filtersHeader:"Filtres d'affichage",supplierFilter:"Afficher par fournisseur",countryFilter:"Afficher par pays",regionFilter:"Afficher par région",
-        all_suppliers:"Tous les fournisseurs",all_countries:"Tous les pays",all_regions:"Toutes les régions",
-        synthesisHeader:"Synthèse",kpi_dc:"DC affichés",kpi_suppliers:"Fournisseurs",kpi_countries:"Pays",kpi_types_open:"Majeur / Opportuniste",kpi_types_status:"Statut",
-        supplier_detail_all:"Tous les fournisseurs",supplier_visit:"Visiter le site",
-        viewOpen:"Open (Major/Opportunistic)", viewClosed:"Closed (Operations)", viewFrozen:"Frozen (Operations)",
-        warn:"⚠️ Information interne uniquement — Les Data Centers marqués comme Frozen ou Fermés ne peuvent pas être proposés aux clients. Ces informations sont destinées exclusivement aux opérations internes et aux démarches d’urgence liées aux sites concernés.",
-        routeHeader:"Calculer la distance entre un site client et un datacenter sélectionné dans le catalogue OB.",clientAddrLabel:"Adresse du client",dcPickLabel:"Datacenter choisi",
-        praLabel:"PRA",routeCalculate:"Calculer",routeClear:"Réinitialiser",routeDisclaimer:"Itinéraire indicatif (OSRM) — géocodage Nominatim.",
-        estimateMsg:"Service de routage indisponible — estimation (ligne droite ×1,25).",
-        pra_ok:"OK",pra_nok:"NOK",
-        pra_max:"Au maximum à",pra_min:"Au minimum à",
-        geo_https:"La géolocalisation nécessite un contexte sécurisé (HTTPS ou http://localhost).",
-        geo_perm:"Permission de localisation refusée.",
-        geo_timeout:"Délai dépassé pour la localisation.",
-        geo_unavail:"Localisation indisponible."},
-    en:{siteLabel:"Select the data center to view:",select_site:"Select a site",reset:"Reset",
-        search_ph:"Search DCs (name, supplier, country…)",
-        filtersHeader:"Display filters",supplierFilter:"Filter by supplier",countryFilter:"Filter by country",regionFilter:"Filter by region",
-        all_suppliers:"All suppliers",all_countries:"All countries",all_regions:"All regions",
-        synthesisHeader:"Summary",kpi_dc:"DC shown",kpi_suppliers:"Suppliers",kpi_countries:"Countries",kpi_types_open:"Major / Opportunistic",kpi_types_status:"Status",
-        supplier_detail_all:"All suppliers",supplier_visit:"Visit website",
-        viewOpen:"Open (Major/Opportunistic)", viewClosed:"Closed (Operations)", viewFrozen:"Frozen (Operations)",
-        warn:"⚠️ Internal use only — Data Centers marked as Frozen or Closed cannot be proposed to customers. This information is strictly for internal operations and emergency actions on these sites.",
-        routeHeader:"Calculate the distance between a client site and a selected data center from the OB catalog.",clientAddrLabel:"Client address",dcPickLabel:"Chosen data center",
-        praLabel:"BCP",routeCalculate:"Calculate",routeClear:"Clear",routeDisclaimer:"Indicative route (OSRM) — Nominatim geocoding.",estimateMsg:"Routing service unavailable — straight-line ×1.25 estimate.",
-        pra_ok:"OK",pra_nok:"NOK",
-        pra_max:"At most",pra_min:"At least",
-        geo_https:"Geolocation requires a secure context (HTTPS or http://localhost).",
-        geo_perm:"Location permission denied.",
-        geo_timeout:"Location request timed out.",
-        geo_unavail:"Location unavailable."}
-  };
-  let LANG='fr'; const T=()=>i18n[LANG];
-
-  /* ===== Leaflet (light/dark) ===== */
-  const map=L.map('map',{zoomControl:true}).setView([20,0],2);
-  window.map = map; // expose pour d'autres fonctions si besoin
-
-  const lightTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO'});
-  const darkTiles  = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO'});
-  lightTiles.addTo(map);
-
-  const cluster=L.markerClusterGroup({showCoverageOnHover:false,zoomToBoundsOnClick:false,spiderfyOnMaxZoom:true,disableClusteringAtZoom:18,maxClusterRadius:50,animate:true,animateAddingMarkers:true}).addTo(map);
-  cluster.on('clusterclick',a=>a.layer.spiderfy());
-
-  const routeGroup=L.layerGroup().addTo(map);
-  let routeLine=null,startMarker=null,endMarker=null,praCircle=null;
-
-  /* UI refs */
-  const siteLabel=document.getElementById('siteLabel');
-  const siteDropdown=document.getElementById('siteDropdown');
-  const resetButton=document.getElementById('resetButton');
-  const searchInput=document.getElementById('searchInput');
-
-  const btnViewOpen=document.getElementById('btnViewOpen');
-  const btnViewFrozen=document.getElementById('btnViewFrozen');
-  const btnViewClosed=document.getElementById('btnViewClosed');
-
-  const langSeg=document.getElementById('langSeg');
-  const themeSeg=document.getElementById('themeSeg');
-
-  const supplierFilter=document.getElementById('supplierFilter');
-  const countryFilter=document.getElementById('countryFilter');
-  const regionFilter=document.getElementById('regionFilter');
-  const exportBtn=document.getElementById('exportBtn');
-
-  const kpi_dc_label=document.getElementById('kpi_dc_label');
-  const kpi_sup_label=document.getElementById('kpi_suppliers_label');
-  const kpi_cty_label=document.getElementById('kpi_countries_label');
-  const kpi_typ_label=document.getElementById('kpi_types_label');
-
-  const supLogo=document.getElementById('supLogo');
-  const supName=document.getElementById('supName');
-  const supLink=document.getElementById('supLink');
-  const supStats=document.getElementById('supStats');
-
-  const clientAddress=document.getElementById('clientAddress');
-  const addrSuggest=document.getElementById('addrSuggest');
-  const useMyLoc=document.getElementById('useMyLoc');
-  const dcPicker2=document.getElementById('dcPicker2');
-  const dcList2=document.getElementById('dcList2');
-
-  const praKmInput=document.getElementById('praKm');
-  const praStatus=document.getElementById('praStatus');
-  const praModeSeg=document.getElementById('praModeSeg');
-  const praHint=document.getElementById('praHint');
-
-  const routeBtn=document.getElementById('routeBtn');
-  const routeClear=document.getElementById('routeClear');
-  const routeStats=document.getElementById('routeStats');
-  const routeDisclaimer=document.getElementById('routeDisclaimer');
-  const geoNote=document.getElementById('geoNote');
-
-  const K={total:document.getElementById('k_total'),suppliers:document.getElementById('k_suppliers'),
-           countries:document.getElementById('k_countries'),types:document.getElementById('k_types'),
-           listCountries:document.getElementById('listCountries'),listSuppliers:document.getElementById('listSuppliers')};
-
-  /* Data stores */
-  let DATA_OPEN=[],DATA_FROZEN=[],DATA_CLOSED=[];
-  let CURRENT_VIEW='open';
-  const markersByDcName=new Map(), markersByOrangeCode=new Map();
-  let allPoints=[],currentSubset=[],currentDcMap=new Map();
-
-  /* Helpers */
-  const norm=s=>s==null?'':String(s).trim();
-  const num=v=>{const n=parseFloat(String(v).replace(',','.'));return Number.isFinite(n)?n:NaN};
-
-  function iconForView(view){
-    const cls = view==='open' ? 'green' : (view==='frozen' ? 'gray' : 'red');
-    return L.divIcon({className:`pin ${cls}`,iconSize:[14,14],iconAnchor:[7,7],popupAnchor:[0,-8]});
-  }
-
-  const SUPPLIER_DOMAINS={'Equinix':'equinix.com','Digital Realty':'digitalrealty.com','Interxion':'interxion.com','DATA4':'data4group.com','Telehouse':'telehouse.com','Global Switch':'globalswitch.com','NTT':'global.ntt'};
-  const inferredDomain=s=>{if(!s)return'';if(SUPPLIER_DOMAINS[s])return SUPPLIER_DOMAINS[s];const slug=s.toLowerCase().replace(/[^a-z0-9]/g,'');return slug?slug+'.com':''};
-
-  function renderBars(container,entries,maxItems=8){
-    const top=entries.slice(0,maxItems); const max=top.length?top[0][1]:0;
-    container.innerHTML=top.map(([label,count])=>{
-      const pct=max?Math.round(count*100/max):0;
-      return `<div class="item"><div class="top"><span>${label}</span><span>${count}</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
-    }).join('');
-  }
-
-  function summarize(subset){
-    const types=subset.reduce((a,p)=>{const t=norm(p.row['Type of DC']);a[t]=(a[t]||0)+1;return a;},{});
-    const supCounts={},countryCounts={},supSet=new Set(),countrySet=new Set();
-    subset.forEach(p=>{
-      const s=norm(p.supplier)||'—'; supCounts[s]=(supCounts[s]||0)+1; supSet.add(s);
-      const c=norm(p.country)||'—'; countryCounts[c]=(countryCounts[c]||0)+1; countrySet.add(c);
-    });
-    K.total.textContent=subset.length; K.suppliers.textContent=supSet.size; K.countries.textContent=countrySet.size;
-
-    if(CURRENT_VIEW==='open'){
-      kpi_typ_label.textContent=T().kpi_types_open;
-      K.types.textContent=`${types['1 - Major']||0} / ${types['2 - Opportunistic']||0}`;
-    }else if(CURRENT_VIEW==='frozen'){
-      kpi_typ_label.textContent=T().kpi_types_status; K.types.textContent='Frozen';
-    }else{
-      kpi_typ_label.textContent=T().kpi_types_status; K.types.textContent='Closed';
+    function upper(s){ return (s||'').toLocaleUpperCase('fr-FR'); }
+    function parseDateOnly(val){ if(!val) return null; return new Date(`${val}T12:00:00`); }
+    function formatDateFRDateOnly(val){
+      const d = parseDateOnly(val); if(!d) return {weekday:'', date:''};
+      const weekday = upper(new Intl.DateTimeFormat('fr-FR',{weekday:'long'}).format(d));
+      const date = new Intl.DateTimeFormat('fr-FR',{day:'numeric', month:'long', year:'numeric'}).format(d).toUpperCase();
+      return {weekday, date};
     }
 
-    renderBars(K.listSuppliers,Object.entries(supCounts).sort((a,b)=>b[1]-a[1]));
-    renderBars(K.listCountries,Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]));
-  }
+    function build(){
+      const nom = upper($("nom").value.trim());
+      const prenom = $("prenom").value.trim();
+      const sexe = $("sexe").value;
+      const priere = $("priere").value;
+      const dateVal = $("date").value;
+      const mosquee = $("mosquee").value.trim();
+      const adresse = $("adresse").value.trim();
+      const contactLine = 'association@amcc.fr | 07 XX XX XX XX';
 
-  /* === POPUP avec DC Manager + Plazza Proximity (direct depuis le row) === */
-  function popupHTML(d){
-    const isEN = (langSeg.getAttribute('data-on') === 'right');
-    const LBL = isEN ? {
-      type:'Type of DC', dc:'Data center', code:'Orange Site Code',
-      addr:'Address', city:'City / Country', sp:'SharePoint link', mgr:'DC Manager'
-    } : {
-      type:'Type de DC', dc:'Datacenter', code:'Site Code Orange',
-      addr:'Adresse', city:'Ville / Pays', sp:'Lien SharePoint', mgr:'DC Manager'
-    };
-    const r = d.row || {};
-    const prox = norm(r['Plazza Proximity'] || d.prox || '');
-    const mgr  = norm(r['DC Manager'] || r['Dc Manager'] || '');
-    const linkHtml = prox ? `<b>${LBL.sp} :</b> <a href="${prox}" target="_blank" rel="noopener">Plazza Proximity</a><br>` : '';
+      const {weekday, date} = formatDateFRDateOnly(dateVal);
+      let priereAff = priere;
+      if(weekday === 'VENDREDI' && priere === 'Dohr') priereAff = 'Jumu‘a';
 
-    return `<div style="max-width:320px">
-      <div style="background:var(--brand);color:#fff;font-weight:700;padding:8px;border-radius:6px 6px 0 0">${d.supplier||'—'}</div>
-      <div style="padding:8px;background:var(--card);border:1px solid var(--line);border-top:none;border-radius:0 0 6px 6px">
-        <b>${LBL.type} :</b> ${d.typeDC||'—'}<br>
-        <b>${LBL.dc} :</b> ${d.dcName||'—'}<br>
-        <b>${LBL.code} :</b> ${d.ocode||'—'}<br>
-        <b>${LBL.addr} :</b> ${d.addr||'—'}<br>
-        <b>${LBL.city} :</b> ${(d.city?d.city+', ':'')+(d.country||'')}<br>
-        ${linkHtml}
-        ${mgr ? `<b>${LBL.mgr} :</b> ${mgr}` : ``}
-      </div>
-    </div>`;
-  }
-
-  function rebuildFiltersOptionsFrom(subset){
-    const suppliers=new Set(), countries=new Set(), regions=new Set();
-    subset.forEach(d=>{ if(d.supplier)suppliers.add(d.supplier); if(d.country)countries.add(d.country); if(d.region)regions.add(d.region); });
-
-    const setOptions=(select, firstLabel, values)=>{
-      const cur=select.value;
-      select.innerHTML='';
-      const o0=document.createElement('option');o0.value='';o0.textContent=firstLabel;select.appendChild(o0);
-      Array.from(values).sort((a,b)=>a.localeCompare(b)).forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;select.appendChild(o);});
-      if(!Array.from(values).includes(cur)) select.value='';
-      else select.value=cur;
-    };
-
-    setOptions(supplierFilter, (LANG==='fr'?i18n.fr.all_suppliers:i18n.en.all_suppliers), suppliers);
-    setOptions(regionFilter,   (LANG==='fr'?i18n.fr.all_regions:i18n.en.all_regions),   regions);
-    setOptions(countryFilter,  (LANG==='fr'?i18n.fr.all_countries:i18n.en.all_countries), countries);
-  }
-
-  function rebuildSiteDropdown(subset){
-    const seen=new Set();
-    siteDropdown.innerHTML=`<option value="">${T().select_site}</option>`;
-    subset.forEach(p=>{
-      if(p.dcName && !seen.has(p.dcName)){
-        seen.add(p.dcName);
-        const opt=document.createElement('option'); opt.value=p.dcName; opt.textContent=p.dcName;
-        siteDropdown.appendChild(opt);
-      }
-    });
-  }
-
-  function populateDcDatalist(dl){
-    dl.innerHTML='';
-    const seen=new Set(); const seenCode=new Set();
-    allPoints.forEach(p=>{ if(p.dcName && !seen.has(p.dcName)){ seen.add(p.dcName); const o=document.createElement('option'); o.value=p.dcName; dl.appendChild(o);} });
-    allPoints.forEach(p=>{ const c=p.orangeCode; if(c && !seenCode.has(c)){ seenCode.add(c); const o=document.createElement('option'); o.value=c; dl.appendChild(o);} });
-  }
-
-  function applyFilters(){
-    const s=supplierFilter.value||'', c=countryFilter.value||'', r=regionFilter.value||'', q=(searchInput.value||'').trim().toLowerCase();
-    currentSubset=allPoints.filter(p=>(s?p.supplier===s:true)&&(c?p.country===c:true)&&(r?p.region===r:true)&&(
-      !q ? true :
-      [p.supplier,p.country,p.region,p.dcName,norm(p.row['Site Code Orange']),norm(p.row['City Area']),norm(p.row['Address']),norm(p.row['Datacenter name (supplier code)'])]
-      .join(' ').toLowerCase().includes(q)
-    ));
-    cluster.clearLayers(); currentSubset.forEach(p=>cluster.addLayer(p.marker));
-    rebuildSiteDropdown(currentSubset); summarize(currentSubset); updateSupplierInfo(s,currentSubset);
-    if(currentSubset.length===1){const m=currentSubset[0].marker; m.openPopup(); map.setView(m.getLatLng(),13)}
-    else if(currentSubset.length>1){const fg=L.featureGroup(currentSubset.map(p=>p.marker)); map.fitBounds(fg.getBounds().pad(0.25))}
-    else map.setView([20,0],2);
-    currentDcMap=new Map(); currentSubset.forEach(p=>{if(!currentDcMap.has(p.dcName))currentDcMap.set(p.dcName,[]); currentDcMap.get(p.dcName).push(p.marker)});
-  }
-
-  function updateSupplierInfo(selectedSupplier,subset){
-    if(!selectedSupplier){ supLogo.style.display='none'; supName.textContent=T().supplier_detail_all; supLink.innerHTML=''; supStats.textContent=''; return; }
-    const domain=inferredDomain(selectedSupplier);
-    supName.textContent=selectedSupplier;
-    supLink.innerHTML=domain?`<a href="https://${domain}" target="_blank" rel="noopener">${(LANG==='fr'?'Visiter le site':'Visit website')}</a>`:'';
-    const count=subset.filter(p=>p.supplier===selectedSupplier).length;
-    supStats.textContent=`${count} ${count>1?(LANG==='fr'?'data centers affichés':'data centers shown'):(LANG==='fr'?'data center affiché':'data center shown')}`;
-    if(domain){supLogo.src=`https://logo.clearbit.com/${domain}`;supLogo.onload=()=>supLogo.style.display='block';supLogo.onerror=()=>supLogo.style.display='none'}
-    else supLogo.style.display='none';
-  }
-
-  function highlightViewButton(){
-    [btnViewOpen,btnViewFrozen,btnViewClosed].forEach(b=>{b.style.outline=''; b.style.boxShadow='';});
-    const b = CURRENT_VIEW==='open'?btnViewOpen : (CURRENT_VIEW==='frozen'?btnViewFrozen:btnViewClosed);
-    b.style.boxShadow='0 0 0 2px rgba(0,0,0,.08), 0 0 0 3px rgba(255,121,0,.5)';
-    kpi_typ_label.textContent=(CURRENT_VIEW==='open')?T().kpi_types_open:T().kpi_types_status;
-    summarize(currentSubset);
-  }
-  function switchView(v){
-    CURRENT_VIEW=v; rebuildAllPointsFromDATA(); highlightViewButton();
-  }
-  btnViewOpen.addEventListener('click',()=>switchView('open'));
-  btnViewFrozen.addEventListener('click',()=>switchView('frozen'));
-  btnViewClosed.addEventListener('click',()=>switchView('closed'));
-
-  [supplierFilter,countryFilter,regionFilter].forEach(sel=>sel.addEventListener('change',applyFilters));
-  searchInput.addEventListener('input',applyFilters);
-  searchInput.addEventListener('change',applyFilters);
-  searchInput.addEventListener('keyup',e=>{ if(e.key==='Enter') applyFilters(); });
-  resetButton.addEventListener('click',()=>{supplierFilter.value='';countryFilter.value='';regionFilter.value='';searchInput.value='';applyFilters()});
-  siteDropdown.addEventListener('change',()=>{
-    const name=siteDropdown.value;
-    if(!name || !currentDcMap.has(name)) return;
-    const list=currentDcMap.get(name);
-    const fg=L.featureGroup(list);
-    map.fitBounds(fg.getBounds().pad(0.25));
-    list[0].openPopup();
-  });
-
-  /* Lang & Theme */
-  function setLangTexts(){
-    siteLabel.textContent=T().siteLabel; resetButton.textContent=T().reset;
-    document.getElementById('filtersHeader').textContent=T().filtersHeader;
-    document.getElementById('clientAddrLabel').textContent=T().clientAddrLabel || 'Adresse du client';
-    document.getElementById('dcPickLabel').textContent=T().dcPickLabel || 'Datacenter choisi';
-    document.getElementById('praLabel').textContent=T().praLabel || 'PRA';
-    document.getElementById('routeHeader').textContent=(LANG==='fr'?'Distance Client — DC':'Client — DC distance');
-    document.getElementById('routeBtn').textContent=T().routeCalculate || 'Calculer';
-    document.getElementById('routeClear').textContent=T().routeClear || 'Réinitialiser';
-    document.getElementById('synthesisHeader').textContent=T().synthesisHeader;
-    kpi_dc_label.textContent=T().kpi_dc; kpi_sup_label.textContent=T().kpi_suppliers; kpi_cty_label.textContent=T().kpi_countries;
-    kpi_typ_label.textContent=(CURRENT_VIEW==='open')?T().kpi_types_open:T().kpi_types_status;
-    document.getElementById('labelSupplier').textContent=T().supplierFilter;
-    document.getElementById('labelCountry').textContent=T().countryFilter;
-    document.getElementById('labelRegion').textContent=T().regionFilter;
-    document.getElementById('noteText').textContent=T().note || '';
-    btnViewOpen.textContent=T().viewOpen; btnViewFrozen.textContent=T().viewFrozen; btnViewClosed.textContent=T().viewClosed;
-    document.getElementById('internalWarn').innerHTML=T().warn;
-    searchInput.placeholder=T().search_ph;
-    langSeg.setAttribute('data-on', LANG==='en' ? 'right' : 'left');
-    praModeSeg.setAttribute('data-on', (localStorage.getItem('dcmap_pra_mode')||'max')==='min'?'right':'left');
-  }
-  langSeg.addEventListener('click', ()=>{ LANG=(LANG==='en')?'fr':'en'; setLangTexts(); summarize(currentSubset); });
-
-  function setTheme(mode){
-    const root=document.documentElement;
-    if(mode==='dark'){
-      root.classList.add('dark'); themeSeg.setAttribute('data-on','right'); localStorage.setItem('dcmap_theme','dark');
-      map.removeLayer(lightTiles); darkTiles.addTo(map);
-    }else{
-      root.classList.remove('dark'); themeSeg.setAttribute('data-on','left'); localStorage.setItem('dcmap_theme','light');
-      map.removeLayer(darkTiles); lightTiles.addTo(map);
+      $("fullnameA4").textContent = `${sexe==='F'?'Madame':'Monsieur'} ${prenom} ${nom}`;
+      $("duaaA4").textContent = (sexe === 'F') ? 'رحمها الله' : 'رحمهُ الله';
+      $("whenA4").innerHTML = `La prière aura lieu le <strong>${weekday} ${date}</strong> après Salat <strong>${priereAff}</strong> à la Mosquée :`;
+      $("mosqueeA4").textContent = mosquee;
+      $("adresseA4").textContent = adresse;
+      $("contactA4").textContent = contactLine;
     }
-  }
-  themeSeg.addEventListener('click', ()=>{ const isDark=!document.documentElement.classList.contains('dark'); setTheme(isDark?'dark':'light'); });
 
-  /* PRA mode toggle */
-  function getPraMode(){ return (praModeSeg.getAttribute('data-on')==='right')?'min':'max'; } // left=max, right=min
-  praModeSeg.addEventListener('click', ()=>{
-    const now = getPraMode()==='max' ? 'min' : 'max';
-    praModeSeg.setAttribute('data-on', now==='min' ? 'right' : 'left');
-    localStorage.setItem('dcmap_pra_mode',now);
-  });
-
-  /* Geocoding & routing */
-  async function geocodeAddress(q,limit=5){
-    const url=`https://nominatim.openstreetmap.org/search?format=json&limit=${limit}&q=${encodeURIComponent(q)}`;
-    const r=await fetch(url,{headers:{'Accept':'application/json'}}); if(!r.ok) throw new Error('geocode');
-    const j=await r.json(); return j.map(it=>({lat:parseFloat(it.lat), lon:parseFloat(it.lon), label:it.display_name}));
-  }
-  let addrResults=[], addrActive=-1, addrTimer=null;
-  clientAddress.addEventListener('input',()=>{
-    clearTimeout(addrTimer);
-    const q=clientAddress.value.trim();
-    if(q.length<3){addrSuggest.style.display='none'; return;}
-    addrTimer=setTimeout(async()=>{
-      try{
-        addrResults=await geocodeAddress(q,7);
-        if(!addrResults.length){addrSuggest.style.display='none';return;}
-        addrSuggest.innerHTML=addrResults.map((r,i)=>`<div class="item" data-i="${i}">${r.label}</div>`).join('');
-        addrSuggest.style.display='block'; addrActive=-1;
-      }catch{addrSuggest.style.display='none';}
-    },250);
-  });
-  addrSuggest.addEventListener('click',e=>{
-    const item=e.target.closest('.item'); if(!item) return;
-    const i=parseInt(item.dataset.i,10); if(isNaN(i)) return;
-    clientAddress.value=addrResults[i].label; addrSuggest.style.display='none'; calcRoute();
-  });
-  document.addEventListener('click',e=>{ if(!addrSuggest.contains(e.target) && e.target!==clientAddress){addrSuggest.style.display='none';} });
-
-  useMyLoc.addEventListener('click',()=>{
-    geoNote.style.display='none';
-    if(!('geolocation' in navigator)){
-      geoNote.textContent=T().geo_unavail; geoNote.style.display='block'; return;
-    }
-    const insecure = location.protocol!=='https:' && location.hostname!=='localhost' && location.hostname!=='127.0.0.1';
-    if(insecure){
-      geoNote.textContent=T().geo_https; geoNote.style.display='block';
-    }
-    navigator.geolocation.getCurrentPosition(pos=>{
-      const {latitude:lat,longitude:lon}=pos.coords;
-      clientAddress.value='Ma position';
-      clientAddress.dataset.lat=lat; clientAddress.dataset.lon=lon;
-      calcRoute();
-    },(err)=>{
-      let msg=T().geo_unavail;
-      if(err.code===1) msg=T().geo_perm;
-      else if(err.code===2) msg=T().geo_unavail;
-      else if(err.code===3) msg=T().geo_timeout;
-      geoNote.textContent=msg; geoNote.style.display='block';
-    },{enableHighAccuracy:true,timeout:8000,maximumAge:0});
-  });
-
-  async function routeOSRMBase(base,from,to){
-    const coords=`${from.lon},${from.lat};${to.lng},${to.lat}`;
-    const url=`${base.replace(/\/$/,'')}/route/v1/driving/${coords}?overview=full&geometries=geojson`;
-    const r=await fetch(url,{headers:{'Accept':'application/json'}}); if(!r.ok) throw new Error('route');
-    const j=await r.json(); if(j.code!=='Ok'||!j.routes||!j.routes.length) return null;
-    const rt=j.routes[0]; return {distance:rt.distance, duration:rt.duration, geometry:rt.geometry};
-  }
-  async function routeOSRMWithFallback(from,to){
-    try{const a=await routeOSRMBase('https://router.project-osrm.org',from,to); if(a) return a;}catch(e){}
-    try{const b=await routeOSRMBase('https://routing.openstreetmap.de/routed-car',from,to); if(b) return b;}catch(e){}
-    return null;
-  }
-  function haversineMeters(a,b){
-    const R=6371000, toRad=x=>x*Math.PI/180;
-    const dLat=toRad(b.lat-a.lat), dLon=toRad(b.lon-a.lon);
-    const lat1=toRad(a.lat), lat2=toRad(b.lat);
-    const h=Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
-    return 2*R*Math.asin(Math.sqrt(h));
-  }
-  function fmtKm(m){ if(m<1000) return `${Math.round(m)} m`; return `${(m/1000).toFixed(1)} km`; }
-  function fmtDur(s){ const h=Math.floor(s/3600), m=Math.round((s%3600)/60); return h?`${h}h${m.toString().padStart(2,'0')}`:`${m} min`; }
-
-  function clearRoute(){ routeGroup.clearLayers(); routeLine=startMarker=endMarker=praCircle=null; routeStats.textContent=''; routeDisclaimer.style.display='none'; praStatus.textContent='—'; praStatus.className='pra-ind'; }
-  function drawCirclePra(center,praKm,ok){
-    praCircle=L.circle([center.lat,center.lon],{radius:praKm*1000,color:ok?'#28a745':'#cc3333',weight:2,fillOpacity:.05,fillColor:ok?'#28a745':'#cc3333'});
-    routeGroup.addLayer(praCircle);
-  }
-  function drawRouteGeoJSON(geom){ routeLine=L.geoJSON(geom,{style:{weight:4,opacity:.9,color:'#ff7900'}}); routeGroup.addLayer(routeLine); }
-  function drawStraightLine(from,to){ routeLine=L.polyline([[from.lat,from.lon],[to.lat,to.lng]],{weight:4,opacity:.9,color:'#777',dashArray:'6 6'}); routeGroup.addLayer(routeLine); }
-  function addEndpoints(from,to){
-    startMarker=L.circleMarker([from.lat,from.lon],{radius:6,weight:2,color:'#2c3e50',fillColor:'#2c3e50',fillOpacity:1});
-    endMarker  =L.circleMarker([to.lat,to.lng],   {radius:6,weight:2,color:'#27ae60',fillColor:'#27ae60',fillOpacity:1});
-    routeGroup.addLayer(startMarker); routeGroup.addLayer(endMarker);
-  }
-
-  function computePraStatus(distKm,praKm,mode){
-    if(!Number.isFinite(distKm)||!Number.isFinite(praKm)) return {ok:false,margin:NaN};
-    if(mode==='max'){ const ok = distKm<=praKm; return {ok, margin:(praKm-distKm)}; }
-    else{ const ok = distKm>=praKm; return {ok, margin:(distKm-praKm)}; }
-  }
-  function setPraUI(ok,marginKm,mode,origin){
-    praStatus.textContent = ok ? T().pra_ok : T().pra_nok;
-    praStatus.className = 'pra-ind ' + (ok?'ok':'nok');
-    const m = Number.isFinite(marginKm) ? marginKm.toFixed(1) : '—';
-    praStatus.title = ok
-      ? (LANG==='fr' ? `Marge ${mode==='max'?'(≤)':'(≥)'} : ${m} km via ${origin}` : `Margin ${mode==='max'?'(≤)':'(≥)'}: ${m} km via ${origin}`)
-      : (LANG==='fr' ? `Écart ${mode==='max'?'(>)':'(<)'} : ${m} km via ${origin}` : `Delta ${mode==='max'?'(>)':'(<)'}: ${m} km via ${origin}`);
-  }
-
-  async function calcRoute(){
-    clearRoute();
-    const mode = (praModeSeg.getAttribute('data-on')==='right') ? 'min' : 'max';
-    const pra = parseFloat(praKmInput.value)||0;
-    localStorage.setItem('dcmap_pra_km', String(pra));
-    localStorage.setItem('dcmap_pra_mode', mode);
-
-    // From
-    let from=null;
-    if(clientAddress.dataset.lat && clientAddress.dataset.lon){
-      from={lat:parseFloat(clientAddress.dataset.lat), lon:parseFloat(clientAddress.dataset.lon)};
-    }else{
-      const q=clientAddress.value.trim(); if(!q){return;}
-      try{
-        const res=await (await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`)).json();
-        if(!res.length){ routeStats.textContent=(LANG==='fr')?'Adresse introuvable.':'Address not found.'; return; }
-        from={lat:parseFloat(res[0].lat),lon:parseFloat(res[0].lon)};
-      }catch{ routeStats.textContent=(LANG==='fr')?'Erreur géocodage.':'Geocoding error.'; return; }
-    }
-    // To
-    const value=(dcPicker2.value||siteDropdown.value||'').trim();
-    const dc=findDc(value);
-    if(!dc){ routeStats.textContent=(LANG==='fr'?'Veuillez choisir un DC de la liste.':'Please pick a DC from the list.'); return; }
-    const to={lat:dc.lat,lng:dc.lng};
-
-    addEndpoints(from,to);
-
-    // Circle first then update
-    drawCirclePra(from,pra,true);
-
-    // Route try
-    const crow=haversineMeters({lat:from.lat,lon:from.lon},{lat:to.lat,lon:to.lng})/1000;
-    let used='OSRM', distKm=null, durSec=null, geom=null;
-
-    try{
-      const rt=await routeOSRMWithFallback(from,to);
-      if(rt){ distKm=rt.distance/1000; durSec=rt.duration; geom=rt.geometry; }
-      else{ used='est.'; distKm=crow*1.25; durSec=(distKm)/(70/60); }
-    }catch{ used='est.'; distKm=crow*1.25; durSec=(distKm)/(70/60); }
-
-    if(geom) drawRouteGeoJSON(geom); else drawStraightLine(from,to);
-    routeStats.innerHTML=`<b>${(LANG==='fr'?'Distance':'Distance')}:</b> ${fmtKm(distKm*1000)} — <b>${(LANG==='fr'?'Durée':'Duration')}:</b> ${fmtDur(durSec)}${used==='est.'?` <span class="small-note">(est.)</span>`:''} | <b>LoS:</b> ${crow.toFixed(1)} km`;
-    routeDisclaimer.style.display='block'; routeDisclaimer.textContent=(used==='OSRM')?(LANG==='fr'?i18n.fr.routeDisclaimer:i18n.en.routeDisclaimer):(LANG==='fr'?i18n.fr.estimateMsg:i18n.en.estimateMsg);
-
-    const {ok,margin}=computePraStatus(distKm,pra,mode);
-    setPraUI(ok,margin,mode,used);
-
-    // recolor PRA circle accordingly & fit bounds
-    routeGroup.removeLayer(praCircle); drawCirclePra(from,pra,ok);
-    const b=L.featureGroup([routeLine,startMarker,endMarker,praCircle].filter(Boolean)).getBounds().pad(0.2); map.fitBounds(b);
-  }
-
-  routeBtn.addEventListener('click',calcRoute);
-  [praKmInput].forEach(el=>el.addEventListener('change',calcRoute));
-  [praKmInput,clientAddress,dcPicker2].forEach(el=>el.addEventListener('keyup',e=>{ if(e.key==='Enter') calcRoute(); }));
-  routeClear.addEventListener('click',()=>{ clientAddress.value=''; delete clientAddress.dataset.lat; delete clientAddress.dataset.lon; dcPicker2.value=''; routeStats.textContent=''; routeDisclaimer.style.display='none'; geoNote.style.display='none'; clearRoute(); });
-
-  function findDc(value){
-    if(!value) return null;
-    if(markersByDcName.has(value)){ const m=markersByDcName.get(value)[0].getLatLng(); return {lat:m.lat,lng:m.lng,marker:markersByDcName.get(value)[0]}; }
-    if(markersByOrangeCode.has(value)){ const m=markersByOrangeCode.get(value)[0].getLatLng(); return {lat:m.lat,lng:m.lng,marker:markersByOrangeCode.get(value)[0]}; }
-    for(const [k,v] of markersByDcName){ if(k.toLowerCase().startsWith(value.toLowerCase())){const m=v[0].getLatLng(); return {lat:m.lat,lng:m.lng,marker:v[0]};} }
-    for(const [k,v] of markersByOrangeCode){ if(k.toLowerCase().startsWith(value.toLowerCase())){const m=v[0].getLatLng(); return {lat:m.lat,lng:m.lng,marker:v[0]};} }
-    return null;
-  }
-
-  /* ==== Excel load ==== */
-  const xhr=new XMLHttpRequest(); xhr.open('GET',url,true); xhr.responseType='arraybuffer';
-  xhr.onload=function(){
-    try{
-      const wb=XLSX.read(new Uint8Array(xhr.response),{type:'array'});
-      const sheet = wb.Sheets['Consolidate List'] || wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet,{defval:''});
-
-      const typeOf = r => norm(r['Type of DC']).toLowerCase();
-      const isOpen   = r => ['1 - major','2 - opportunistic'].includes(typeOf(r));
-      const isFrozen = r => typeOf(r)==='4 - frozen';
-      const isClosed = r => typeOf(r)==='5 - closed';
-
-      const mapRow = (r)=> {
-        const d={supplier:norm(r['Supplier']),dcName:norm(r['Datacenter name (supplier code)']),typeDC:norm(r['Type of DC']),
-                 ocode:norm(r['Site Code Orange']),addr:norm(r['Address']),city:norm(r['City Area']),
-                 country:norm(r['Country']),region:norm(r['Region']||r['Région']||''),prox:norm(r['Plazza Proximity']),
-                 lat:num(r['Latitude']),lng:num(r['Longitude']),row:r};
-        return (Number.isFinite(d.lat)&&Number.isFinite(d.lng))?d:null;
-      };
-
-      const mapped = rows.map(mapRow).filter(Boolean);
-      DATA_OPEN   = mapped.filter(p => isOpen(p.row));
-      DATA_FROZEN = mapped.filter(p => isFrozen(p.row));
-      DATA_CLOSED = mapped.filter(p => isClosed(p.row));
-
-      // FR + thème + PRA prefs
-      setLangTexts();
-      setTheme(localStorage.getItem('dcmap_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
-      const savedPra = parseFloat(localStorage.getItem('dcmap_pra_km')); if(Number.isFinite(savedPra)) praKmInput.value = savedPra;
-      const savedMode = localStorage.getItem('dcmap_pra_mode')||'max'; praModeSeg.setAttribute('data-on', savedMode==='min'?'right':'left');
-
-      CURRENT_VIEW='open';
-      rebuildAllPointsFromDATA(); highlightViewButton();
-      applyFilters();
-
-    }catch(e){console.error('Excel error:',e)}
-  };
-  xhr.onerror=()=>console.error('Excel request failed'); xhr.send();
-
-  function rebuildAllPointsFromDATA(){
-    allPoints=[]; markersByDcName.clear(); markersByOrangeCode.clear(); cluster.clearLayers();
-    const ACTIVE = CURRENT_VIEW==='open'?DATA_OPEN : (CURRENT_VIEW==='frozen'?DATA_FROZEN:DATA_CLOSED);
-    const icon = iconForView(CURRENT_VIEW);
-    ACTIVE.forEach(d=>{
-      const marker=L.marker([d.lat,d.lng],{icon}).bindPopup(popupHTML(d));
-      if(d.dcName){ if(!markersByDcName.has(d.dcName))markersByDcName.set(d.dcName,[]); markersByDcName.get(d.dcName).push(marker); }
-      if(d.ocode){ if(!markersByOrangeCode.has(d.ocode))markersByOrangeCode.set(d.ocode,[]); markersByOrangeCode.get(d.ocode).push(marker); }
-      allPoints.push({marker,supplier:d.supplier,country:d.country,region:d.region,dcName:d.dcName,orangeCode:d.ocode,row:d.row,typeDC:d.typeDC});
+    ['nom','prenom','sexe','date','priere','mosquee','adresse'].forEach(id=>{
+      $(id).addEventListener('input', build);
+      $(id).addEventListener('change', build);
     });
-    rebuildFiltersOptionsFrom(allPoints);
-    applyFilters();
-    populateDcDatalist(dcList2);
-  }
+    $("apply").addEventListener('click', build);
 
-  /* === Export === */
-  if(exportBtn){
-    exportBtn.addEventListener('click', async ()=>{
-      try{
-        // Vue
-        const view = CURRENT_VIEW;
-        // Filtres
-        const supplier = (supplierFilter.value||'').trim();
-        const region   = (regionFilter.value||'').trim();
-        const country  = (countryFilter.value||'').trim();
-        const q        = (searchInput.value||'').trim().toLowerCase();
-
-        // Recharger Excel
-        const res = await fetch(EXCEL_URL + '?v=' + Date.now());
-        if(!res.ok) throw new Error('Excel load failed');
-        const buf = await res.arrayBuffer();
-        const wb = XLSX.read(new Uint8Array(buf), {type:'array'});
-        const sheet = wb.Sheets['Consolidate List'] || wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
-
-        const typeOf = r => norm(r['Type of DC']).toLowerCase();
-        const isOpen   = r => ['1 - major','2 - opportunistic'].includes(typeOf(r));
-        const isFrozen = r => typeOf(r)==='4 - frozen';
-        const isClosed = r => typeOf(r)==='5 - closed';
-
-        const mapped = rows.map(r=>{
-          const d={supplier:norm(r['Supplier']),dcName:norm(r['Datacenter name (supplier code)']),typeDC:norm(r['Type of DC']),
-                   ocode:norm(r['Site Code Orange']),addr:norm(r['Address']),city:norm(r['City Area']),
-                   country:norm(r['Country']),region:norm(r['Region']||r['Région']||''),prox:norm(r['Plazza Proximity']),
-                   lat:num(r['Latitude']),lng:num(r['Longitude']),row:r};
-          return (Number.isFinite(d.lat)&&Number.isFinite(d.lng))?d:null;
-        }).filter(Boolean);
-
-        let active = mapped;
-        if(view==='open')   active = mapped.filter(p => isOpen(p.row));
-        if(view==='frozen') active = mapped.filter(p => isFrozen(p.row));
-        if(view==='closed') active = mapped.filter(p => isClosed(p.row));
-
-        function matchesQuery(p){
-          if(!q) return true;
-          const text = [
-            p.supplier, p.country, p.region, p.dcName,
-            norm(p.row['Site Code Orange']), norm(p.row['City Area']),
-            norm(p.row['Address']), norm(p.row['Datacenter name (supplier code)'])
-          ].join(' ').toLowerCase();
-          return text.includes(q);
-        }
-        const filtered = active.filter(p =>
-          (supplier ? p.supplier===supplier : true) &&
-          (region   ? p.region===region     : true) &&
-          (country  ? p.country===country   : true) &&
-          matchesQuery(p)
-        );
-
-        const EXPORT_COLS=['Zone','Region','Country','City Area','Supplier','Site Code Orange','Address','Datacenter name (supplier code)','Type of DC','DC Manager'];
-        function getField(row,names){
-          const keys = Object.keys(row);
-          for(const want of (Array.isArray(names)?names:[names])){
-            if(want in row) return row[want];
-            const hit=keys.find(k => norm(k).toLowerCase()===norm(want).toLowerCase());
-            if(hit) return row[hit];
-          }
-          return '';
-        }
-        function buildExportRow(r){
-          return {
-            'Zone': getField(r, ['Zone','Zone DC','Zone géographique']),
-            'Region': getField(r, ['Region','Région']),
-            'Country': getField(r, 'Country'),
-            'City Area': getField(r, 'City Area'),
-            'Supplier': getField(r, 'Supplier'),
-            'Site Code Orange': getField(r, 'Site Code Orange'),
-            'Address': getField(r, 'Address'),
-            'Datacenter name (supplier code)': getField(r, 'Datacenter name (supplier code)'),
-            'Type of DC': getField(r, 'Type of DC'),
-            'DC Manager': getField(r, ['DC Manager','Dc Manager'])
-          };
-        }
-        const exportRows = filtered.map(p => buildExportRow(p.row));
-        if(!exportRows.length){
-          alert((LANG==='en') ? 'No data to export.' : 'Aucune donnée à exporter.');
-          return;
-        }
-        const wbOut = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(exportRows, {header:EXPORT_COLS, skipHeader:false});
-        ws['!cols'] = EXPORT_COLS.map(h=>({wch: Math.max(h.length, ...exportRows.map(r=>String(r[h]||'').length)) + 2 }));
-        XLSX.utils.book_append_sheet(wbOut, ws, 'Export');
-
-        const parts=[]; if(supplier) parts.push(supplier.replace(/[^\w-]+/g,'_')); if(country) parts.push(country.replace(/[^\w-]+/g,'_')); if(region) parts.push(region.replace(/[^\w-]+/g,'_'));
-        parts.push(view);
-        const suffix = parts.length ? '_'+parts.join('_') : '';
-        const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
-        const filename = `DCMAP_export${suffix}_${stamp}.xlsx`;
-        XLSX.writeFile(wbOut, filename);
-      }catch(e){
-        console.error(e);
-        alert((LANG==='en') ? 'Export failed. See console.' : 'Échec de l’export. Voir la console.');
-      }
+    document.getElementById('exportPng').addEventListener('click', async () => {
+      build();
+      /* NOTE CORS :
+         Si la rosace hébergée sur i.ibb.co ne s’exporte pas (canvas tainted),
+         soit :
+         - remplace src par une image locale (ex: ./rosace.png),
+         - ou héberge l’image sur ton propre domaine avec CORS autorisé.
+      */
+      const canvas = await html2canvas($("posterA4"), {
+        scale: 2,
+        backgroundColor: null,
+        useCORS: true
+      });
+      const link = document.createElement('a');
+      link.download = `affiche-janaza-A4-${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
     });
-  }
 
-  /* Build from DATA */
-  function rebuildAllPointsFromDATA(){
-    allPoints=[]; markersByDcName.clear(); markersByOrangeCode.clear(); cluster.clearLayers();
-    const ACTIVE = CURRENT_VIEW==='open'?DATA_OPEN : (CURRENT_VIEW==='frozen'?DATA_FROZEN:DATA_CLOSED);
-    const icon = iconForView(CURRENT_VIEW);
-    ACTIVE.forEach(d=>{
-      const marker=L.marker([d.lat,d.lng],{icon}).bindPopup(popupHTML(d));
-      if(d.dcName){ if(!markersByDcName.has(d.dcName))markersByDcName.set(d.dcName,[]); markersByDcName.get(d.dcName).push(marker); }
-      if(d.ocode){ if(!markersByOrangeCode.has(d.ocode))markersByOrangeCode.set(d.ocode,[]); markersByOrangeCode.get(d.ocode).push(marker); }
-      allPoints.push({marker,supplier:d.supplier,country:d.country,region:d.region,dcName:d.dcName,orangeCode:d.ocode,row:d.row,typeDC:d.typeDC});
-    });
-    rebuildFiltersOptionsFrom(allPoints);
-    applyFilters();
-    populateDcDatalist(dcList2);
-  }
-
-});
-</script>
+    (function init(){
+      const d = new Date(); d.setDate(d.getDate()+1);
+      const yyyy=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+      $("date").value = `${yyyy}-${mm}-${dd}`;
+      build();
+    })();
+  </script>
 </body>
 </html>
-<!-- === PATCH : Encapsuler la carte dans un bloc arrondi === -->
-<style>
-/* ===== Map card (mêmes dimensions et arrondis que les autres blocs) ===== */
-.map-shell{
-  max-width:1400px;
-  margin:12px auto 0 auto;     /* aligné comme .container/.mega-band */
-  padding:0 12px;              /* même padding latéral */
-}
-.map-card{
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:14px;          /* même radius que .card */
-  box-shadow:var(--shadow);
-  overflow:hidden;             /* arrondit les bords visibles de la carte */
-}
-.map-card #map{
-  height:68vh;
-  border:0;                    /* supprime la bordure basse précédente */
-}
-.map-card .leaflet-top,
-.map-card .leaflet-bottom{
-  margin:10px;                 /* évite que les boutons collent aux bords */
-}
-:root.dark .map-card{
-  background:var(--card);
-  border-color:var(--line);
-}
-@media (max-width: 900px){
-  .map-card #map{ height:56vh; }
-}
-</style>
 
-<script>
-document.addEventListener('DOMContentLoaded', ()=>{
-  // Si la carte n’est pas encore encapsulée, on la replace automatiquement
-  const mapEl = document.getElementById('map');
-  if(mapEl && !mapEl.closest('.map-card')){
-    const wrapper = document.createElement('div');
-    wrapper.className = 'map-card';
-    mapEl.parentNode.insertBefore(wrapper, mapEl);
-    wrapper.appendChild(mapEl);
-
-    const shell = document.createElement('div');
-    shell.className = 'map-shell';
-    wrapper.parentNode.insertBefore(shell, wrapper);
-    shell.appendChild(wrapper);
-  }
-});
-</script>
