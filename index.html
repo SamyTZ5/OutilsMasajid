@@ -75,6 +75,24 @@
     /* Logo (réglable) */
     .logo img{position:absolute;left:20px;top:var(--logo-top);width:80px;height:auto;object-fit:contain;opacity:.9}
 
+    /* affiche : ligne "Lieu d’inhumation" */
+    .burial{
+      opacity:.95;
+      font-weight:600;
+      font-size:20px;
+      margin-top:6px;
+    }
+    
+    /* remplace la ligne padding de .content pour gagner un peu en hauteur */
+    .content{
+      position:relative;z-index:2;text-align:center;max-width:1000px;margin:0 auto;
+      padding:72px 220px 96px 220px; /* AVANT: 80px 220px 110px 220px */
+      display:flex;flex-direction:column;justify-content:center;min-height:100%;
+    }
+
+
+
+    
     /* -------- Mobile : ne PAS recouvrir l’aperçu -------- */
     @media (max-width:640px){
       .panel{position:static; /* <-- plus de sticky */ }
@@ -99,6 +117,7 @@
         <div><label>Prière</label><select id="priere"><option>Dohr</option><option>Asr</option><option>Maghrib</option><option>Isha</option><option>Fajr</option></select></div>
         <div class="full"><label>Mosquée</label><input id="mosquee" value="El-Mohsinine de Canteleu" /></div>
         <div class="full"><label>Adresse</label><input id="adresse" value="36 Anc. Rte de Duclair, 76380 Canteleu" /></div>
+        <div class="full"><label>Lieu d’inhumation</label><input id="burial" placeholder="au Maroc, en Algérie, au Cimetière du Mont-Gargan" /></div>
       </div>
       <div class="row">
         <button class="btn" id="resetAll">Réinitialiser</button>
@@ -124,6 +143,7 @@
               <div class="mosquee" id="mosqueeA4"></div>
               <div class="address" id="adresseA4"></div>
               <div class="footer-ar">بارك الله فيكم</div>
+              <div class="burial" id="burialA4"></div>
             </div>
             <div class="contact" id="contactA4">mosquee.amcc@gmail.com | 02 35 07 26 22</div>
           </div>
@@ -165,6 +185,9 @@
       $("adresseA4").textContent = adresse;
     }
 
+    // NEW: afficher la ligne seulement si remplie
+    $("#burialA4").textContent = burial ? `Lieu d’inhumation : ${burial}` : "";
+
     // Échelle responsive qui réserve la hauteur affichée
     function fitPreview(){
       const wrap = $("tvWrap"), scaleWrap = $("posterScaleWrap");
@@ -186,6 +209,7 @@
       $("priere").value = "Dohr";
       $("mosquee").value = "";
       $("adresse").value = "";
+      $("#burial").value = "";            // ← NEW
       build(); fitPreview();
     });
 
@@ -221,7 +245,7 @@
     });
 
     // Live build + fit
-    ['nom','prenom','sexe','date','priere','mosquee','adresse'].forEach(id=>{
+  ['nom','prenom','sexe','date','priere','mosquee','adresse','burial'].forEach(id=>{
       $(id).addEventListener('input', build);
       $(id).addEventListener('change', build);
     });
@@ -236,6 +260,7 @@
   </script>
 </body>
 </html>
+
 
 
 
