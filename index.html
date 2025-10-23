@@ -32,6 +32,9 @@
     .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
     .btn{border:0;border-radius:12px;padding:10px 16px;font-weight:700;background:var(--red);color:#fff;cursor:pointer}
     .btn.export{background:var(--accent)}
+    /* petit style pour la case Enfant */
+    .inline{display:flex;align-items:center;gap:10px;margin-top:2px}
+    .inline input[type="checkbox"]{width:18px;height:18px}
 
     /* -------- Preview TV -------- */
     .preview{display:flex;justify-content:center;align-items:flex-start;padding:12px}
@@ -56,8 +59,8 @@
     /* Contenu centré */
     .content{
       position:relative;z-index:2;text-align:center;max-width:1000px;margin:0 auto;
-		padding:72px 140px 96px 140px; /* ← AVANT: 72px 220px 96px 220px */
-		display:flex;flex-direction:column;justify-content:center;min-height:100%;
+      padding:72px 140px 96px 140px;
+      display:flex;flex-direction:column;justify-content:center;min-height:100%;
     }
 
     /* Typo */
@@ -85,8 +88,8 @@
       .btn{padding:12px 18px;font-size:16px}
       .preview{padding:8px}
       .tv{padding:8px;border-radius:10px}
-		.content{ padding:60px 120px 90px 120px; } /* ← AVANT: 60px 200px 90px 200px */
-  }
+      .content{ padding:60px 120px 90px 120px; }
+    }
   </style>
 </head>
 <body>
@@ -96,12 +99,24 @@
       <div class="form-grid">
         <div class="full"><label>Nom</label><input id="nom" value="NOM DE FAMILLE" /></div>
         <div><label>Prénom</label><input id="prenom" value="Prénom" /></div>
-        <div><label>Sexe</label><select id="sexe"><option value="H">Homme</option><option value="F">Femme</option></select></div>
+
+        <div>
+          <label>Sexe</label>
+          <select id="sexe">
+            <option value="H">Homme</option>
+            <option value="F">Femme</option>
+          </select>
+          <!-- Nouvelle case à cocher ENFANT -->
+          <div class="inline">
+            <input type="checkbox" id="enfant" />
+            <label for="enfant" style="margin:0;font-weight:600;">Enfant</label>
+          </div>
+        </div>
+
         <div><label>Date (jj/mm/aaaa)</label><input id="date" type="date" /></div>
         <div><label>Prière</label><select id="priere"><option>Dohr</option><option>Asr</option><option>Maghrib</option><option>Isha</option><option>Fajr</option></select></div>
         <div class="full"><label>Mosquée</label><input id="mosquee" value="El-Mohsinine de Canteleu" /></div>
         <div class="full"><label>Adresse</label><input id="adresse" value="36 Anc. Rte de Duclair, 76380 Canteleu" /></div>
-        <!-- Nouveau champ -->
         <div class="full">
           <label>Lieu d’inhumation</label>
           <input id="burial" placeholder="au Maroc, en Algérie, au Cimetière du Mont-Gargan" />
@@ -124,13 +139,13 @@
             <div class="content">
               <div class="logo"><img src="https://i.ibb.co/99F9yKyK/image.png" alt="Logo Mosquée" crossorigin="anonymous"></div>
               <h1 class="top-ar">إِنَّا لِلَّهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ</h1>
-              <p class="headline">Une <strong>Salat Al-Janaza</strong> (prière funéraire) est organisée pour :</p>
+              <!-- id ajouté pour modifier le texte de l’intro -->
+              <p class="headline" id="headlineA4">Une <strong>Salat Al-Janaza</strong> (prière funéraire) est organisée pour :</p>
               <h2 class="name" id="fullnameA4">Monsieur Hicham ZAABOULI</h2>
               <p class="duaa" id="duaaA4">Qu’Allah lui fasse miséricorde</p>
               <div class="when" id="whenA4"></div>
               <div class="mosquee" id="mosqueeA4"></div>
               <div class="address" id="adresseA4"></div>
-              <!-- Nouvelle ligne sur l'affiche -->
               <div class="burial" id="burialA4"></div>
               <div class="footer-ar">بارك الله فيكم</div>
             </div>
@@ -159,21 +174,33 @@
       const nom = upper($("nom").value.trim());
       const prenom = $("prenom").value.trim();
       const sexe = $("sexe").value;
+      const isChild = $("enfant").checked;           // NEW
       const priere = $("priere").value;
       const dateVal = $("date").value;
       const mosquee = $("mosquee").value.trim();
       const adresse = $("adresse").value.trim();
-      const burial  = ($("burial").value || "").trim(); // NEW
+      const burial  = ($("burial").value || "").trim();
 
-      const {weekday, date} = formatDateFRDateOnly(dateVal); // ← FIX
+      const {weekday, date} = formatDateFRDateOnly(dateVal);
       let priereAff = priere; if(weekday === 'VENDREDI' && priere === 'Dohr') priereAff = 'Jumu‘a';
 
-      $("fullnameA4").textContent = `${sexe==='F'?'Madame':'Monsieur'} ${prenom} ${nom}`;
+      // Civilité : adulte vs enfant (seulement F → Mademoiselle ; H reste Monsieur)
+      const civilite = isChild ? (sexe === 'F' ? 'Mademoiselle' : 'Monsieur') : (sexe === 'F' ? 'Madame' : 'Monsieur');
+
+      // Headline : adulte vs enfant
+      if (isChild) {
+        const enfantTexte = (sexe === 'F') ? 'une <strong>petite fille</strong>' : 'un <strong>petit garçon</strong>';
+        $("headlineA4").innerHTML = `Une <strong>Salat Al-Janaza</strong> (prière funéraire) est organisée pour ${enfantTexte} :`;
+      } else {
+        $("headlineA4").innerHTML = `Une <strong>Salat Al-Janaza</strong> (prière funéraire) est organisée pour :`;
+      }
+
+      $("fullnameA4").textContent = `${civilite} ${prenom} ${nom}`;
       $("duaaA4").textContent = "Qu’Allah lui fasse miséricorde";
       $("whenA4").innerHTML = `La prière aura lieu le <strong>${weekday} ${date}</strong> après Salat <strong>${priereAff}</strong> à la Mosquée :`;
       $("mosqueeA4").textContent = mosquee;
       $("adresseA4").textContent = adresse;
-      $("burialA4").textContent  = burial ? `Lieu d’inhumation : ${burial}` : "";
+      $("burialA4").innerHTML  = burial ? `Lieu d’inhumation : <em>${burial}</em>` : "";
     }
 
     // Échelle responsive qui réserve la hauteur affichée
@@ -191,12 +218,13 @@
       $("nom").value = "";
       $("prenom").value = "";
       $("sexe").value = "H";
+      $("enfant").checked = false;                 // NEW
       const d = new Date(); d.setDate(d.getDate()+1);
       $("date").value = d.toISOString().slice(0,10);
       $("priere").value = "Dohr";
       $("mosquee").value = "";
       $("adresse").value = "";
-      $("burial").value = ""; // NEW
+      $("burial").value = "";
       build(); fitPreview();
     });
 
@@ -227,8 +255,8 @@
       link.click();
     });
 
-    // Live build + fit (← FIX : IDs sans #)
-    ['nom','prenom','sexe','date','priere','mosquee','adresse','burial'].forEach(id=>{
+    // Live build + fit
+    ['nom','prenom','sexe','enfant','date','priere','mosquee','adresse','burial'].forEach(id=>{
       const el = $(id);
       if (!el) return;
       el.addEventListener('input', build);
