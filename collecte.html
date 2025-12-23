@@ -8,7 +8,7 @@
   <style>
     :root{
       --bg:#f7f3ec; --ink:#1e2a3b; --gold:#8b6c2a; --accent:#0c445c; 
-      --bright-gold: #b48325; /* NOUVEAU DORÉ PLUS FONCÉ/RICHE */
+      --bright-gold: #b48325; 
       --poster-w:1120px; --poster-h:720px;
     }
     *{box-sizing:border-box;margin:0;padding:0}
@@ -28,8 +28,14 @@
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .full { grid-column: 1 / -1; }
     label { display: block; font-size: 11px; font-weight: 700; color: #555; margin-bottom: 4px; }
-    input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; background: #f9f9f9; outline: none; }
-    input:focus, select:focus { border-color: var(--accent); background: #fff; }
+    
+    input, select, textarea { 
+      width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; 
+      font-size: 14px; background: #f9f9f9; outline: none; font-family: inherit;
+    }
+    textarea { resize: vertical; min-height: 120px; }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); background: #fff; }
+
     .btns { display: flex; gap: 10px; margin-top: 10px; }
     .btn { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; color: white; transition: 0.2s; font-size: 14px; }
     .btn-reset { background: #94a3b8; }
@@ -42,7 +48,7 @@
     .tv-stand { position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); width: 120px; height: 24px; background: #222; border-radius: 0 0 10px 10px; z-index: 0; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
     #scale-wrapper { width: var(--poster-w); height: var(--poster-h); background: white; transform-origin: top left; overflow: hidden; }
 
-    /* --- POSTER --- */
+    /* --- POSTER DESIGN --- */
     #poster { width: 100%; height: 100%; position: relative; background: var(--bg); display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 60px; }
 
     .rosette { position: absolute; top: 50%; transform: translateY(-50%); width: 260px; opacity: 1; mix-blend-mode: normal; pointer-events: none; z-index: 10; }
@@ -52,40 +58,36 @@
     .mosque-logo { position: absolute; top: 35px; left: 40px; width: 90px; height: 90px; object-fit: contain; z-index: 15; display: none; }
     .mosque-logo.active { display: block; } 
 
-    .content { width: 100%; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; z-index: 5; padding: 0 20px; }
+    .content { width: 100%; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; z-index: 5; padding: 0 40px; }
 
-    /* --- MODIFICATIONS --- */
+    /* --- MODIFICATIONS VISIBLES --- */
     
-    .poster-title {
-        font-size: 28px;
-        font-weight: 900; color: var(--gold);
-        text-transform: uppercase; margin-bottom: 25px; line-height: 1.1;
-        max-width: 80%; letter-spacing: 1px;
+    .poster-main-title {
+        font-size: 50px; 
+        font-weight: 900; 
+        color: var(--bright-gold);
+        text-transform: uppercase; 
+        margin-bottom: 40px; 
+        line-height: 1.1;
+        max-width: 80%;
+        text-shadow: 0 2px 0 rgba(0,0,0,0.05);
+        letter-spacing: 1px;
     }
 
-    .ar-greeting {
-        font-family: 'Amiri', serif; 
-        font-size: 55px;
-        color: var(--ink);
-        margin-bottom: 40px;
+    .poster-message-body {
+        /* CHANGEMENT DE POLICE : On utilise 'Inter' au lieu de 'Amiri' pour plus de modernité */
+        font-family: 'Inter', sans-serif; 
+        font-weight: 600;
+        font-size: 32px; 
+        color: var(--ink); 
+        line-height: 1.5;
+        
+        /* TEXTE PLUS ETROIT : 60% pour éviter les logos */
+        max-width: 60% !important; 
+        
+        white-space: pre-wrap; /* Conserve les retours à la ligne */
     }
 
-    /* Texte central élargi */
-    .poster-body-text {
-        font-size: 28px; color: var(--ink); line-height: 1.5;
-        max-width: 72% !important; /* <-- ÉLARGI ICI (72%) */
-        margin-bottom: 35px;
-    }
-    
-    /* Variable en DORÉ PLUS FONCÉ */
-    .poster-body-text strong {
-        color: var(--bright-gold) !important; /* Utilise le nouveau doré */
-        font-weight: 900;
-        text-shadow: 0 1px 0 rgba(0,0,0,0.05);
-    }
-
-    .baraka { font-family: 'Amiri', serif; font-size: 42px; margin-top: 10px; color: #333; }
-    
     .footer { position: absolute; bottom: 15px; width: 100%; text-align: center; font-size: 14px; color: #1e2a3b; font-weight: 600; z-index: 20; opacity: 0.8; letter-spacing: 0.5px; }
 
   </style>
@@ -94,28 +96,11 @@
 
 <div class="app">
   <div class="panel">
-    <div>
-      <h2>Détails de la Collecte</h2>
-      <div class="row">
-        <div class="full">
-            <label>Nom de la Mosquée Invitée</label>
-            <input id="guestName" placeholder="ex: Grande Mosquée de Paris">
-        </div>
-        <div class="full">
-            <label>Ville / Département (Invitée)</label>
-            <input id="guestCity" placeholder="ex: 75005 Paris">
-        </div>
-        <div class="full">
-          <label>Date du Vendredi (Jumu'a)</label>
-          <input type="date" id="date">
-        </div>
-      </div>
-    </div>
     
     <div>
-      <h2>Mosquée Hôte (Nous)</h2>
+      <h2>Mosquée</h2>
       <div class="full">
-        <label>Sélectionner notre mosquée</label>
+        <label>Sélectionner la mosquée</label>
         <select id="mosqueeSelect">
           <option value="canteleu">Mosquée El-Mohsinine de Canteleu</option>
           <option value="rouen">Mosquée Al-Kaouthar (Rouen)</option>
@@ -126,9 +111,22 @@
     </div>
     
     <div>
-      <h2>Contact Hôte (Bas de page)</h2>
+      <h2>Message</h2>
+      <div class="full" style="margin-bottom:10px;">
+          <label>Titre de l'annonce</label>
+          <input id="titreInput" placeholder="ex: INFO TRAVAUX, AÏD MUBARAK, CONFÉRENCE...">
+      </div>
+      <div class="full">
+          <label>Texte de l'annonce</label>
+          <textarea id="messageInput" placeholder="Écrivez votre message ici..."></textarea>
+      </div>
+    </div>
+    
+    <div>
+      <h2>Contact (Bas de page)</h2>
       <div class="row"><div><label>Tél</label><input id="tel"></div><div><label>Email</label><input id="email"></div></div>
     </div>
+
     <div class="btns">
       <button class="btn btn-reset" id="resetBtn">Effacer</button>
       <button class="btn btn-down" id="downloadBtn">Télécharger</button>
@@ -149,18 +147,11 @@
           <img id="logo-autre" class="mosque-logo" src="" style="display:none">
 
           <div class="content">
-            <h1 class="poster-title">Annonce Collecte pour une Mosquée</h1>
-            <div class="ar-greeting">السلام عليكم ورحمة الله وبركاته</div>
+            <h1 id="posterTitle" class="poster-main-title">TITRE DE L'ANNONCE</h1>
             
-            <p id="mainText" class="poster-body-text">
-                Nous vous informons que <strong>[Mosquée]</strong> viendra faire une collecte dans notre mosquée le vendredi <strong>[date]</strong>, à l’occasion de la prière du Jumu‘a.
-            </p>
-            
-            <p class="poster-body-text" style="font-size:24px; margin-bottom:10px;">
-                Nous vous invitons à soutenir ce projet selon vos moyens.
-            </p>
-
-            <div class="baraka">بارك الله فيكم</div>
+            <div id="posterBody" class="poster-message-body">
+Veuillez saisir votre message dans le formulaire à gauche.
+            </div>
           </div>
           
           <div id="contactDisplay" class="footer">00 00 00 00 00 | email@example.com</div>
@@ -195,21 +186,12 @@
   }
 
   function render() {
-    const guestName = $("guestName").value.trim() || "La mosquée invitée";
-    const guestCity = $("guestCity").value.trim();
-    
-    let guestFullName = guestName;
-    if(guestCity) guestFullName += ` (${guestCity})`;
+    // Récupération Titre et Message
+    const titre = $("titreInput").value.trim() || "TITRE DE L'ANNONCE";
+    const message = $("messageInput").value.trim() || "Votre message s'affichera ici...";
 
-    const dateInput = $("date").value;
-    let dateStr = "...";
-    if(dateInput) {
-      const d = new Date(dateInput);
-      const userTime = new Date(d.getTime() + d.getTimezoneOffset()*60000);
-      dateStr = new Intl.DateTimeFormat('fr-FR', {day:'numeric', month:'long', year:'numeric'}).format(userTime);
-    }
-
-    $("mainText").innerHTML = `Nous vous informons que <strong>${guestFullName.toUpperCase()}</strong> viendra faire une collecte dans notre mosquée le vendredi <strong>${dateStr}</strong>, à l’occasion de la prière du Jumu‘a.`;
+    $("posterTitle").textContent = titre;
+    $("posterBody").textContent = message;
 
     $("contactDisplay").textContent = `${$("tel").value} | ${$("email").value}`;
   }
@@ -227,17 +209,13 @@
   }
 
   window.addEventListener('load', () => {
-    const d = new Date(); 
-    d.setDate(d.getDate() + (5 + 7 - d.getDay()) % 7);
-    $("date").value = d.toISOString().split('T')[0];
-    
     $("mosqueeSelect").value = "canteleu";
     updateFromMosqueSelect();
     setTimeout(fit, 100);
   });
   window.addEventListener('resize', fit);
 
-  document.querySelectorAll('input, select').forEach(el => {
+  document.querySelectorAll('input, select, textarea').forEach(el => {
     if(el.id === 'mosqueeSelect') el.addEventListener('change', updateFromMosqueSelect);
     else el.addEventListener('input', render);
   });
@@ -265,8 +243,8 @@
     try {
       const canvas = await html2canvas($("poster"), { scale: 2, useCORS: true, backgroundColor: null });
       const a = document.createElement('a');
-      let safeName = $("guestName").value.trim().replace(/[^a-z0-9]/gi, '_').toLowerCase() || "collecte";
-      a.download = `Affiche_Collecte_${safeName}.png`;
+      let safeName = $("titreInput").value.trim().replace(/[^a-z0-9]/gi, '_').toLowerCase() || "annonce";
+      a.download = `Affiche_Annonce_${safeName}.png`;
       a.href = canvas.toDataURL("image/png");
       a.click();
     } catch(err) {
