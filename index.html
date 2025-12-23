@@ -2,274 +2,255 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Générateur d’affiches Janaza — A4 TV</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Portail Générateur Mosquée</title>
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
   <style>
     :root{
-      --bg:#f7f3ec; --ink:#1e2a3b; --gold:#8b6c2a; --accent:#0c445c; --red:#c81e1e; --star:#0f445b;
-      --poster-w:1120px; --poster-h:720px;
-      --logo-top:80px;
+      --bg:#f7f3ec; 
+      --ink:#1e2a3b; 
+      --gold:#8b6c2a; 
+      --accent:#0c445c; 
+      --white: #ffffff;
     }
     *{box-sizing:border-box;margin:0;padding:0}
-    html,body{height:100%}
-    body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:linear-gradient(180deg,#fbfaf8,#f3efe8);overflow-x:hidden}
-
-    .app{display:grid;grid-template-columns:420px 1fr;gap:20px;min-height:100vh;padding:18px}
-    @media (max-width:1024px){.app{grid-template-columns:1fr;gap:12px}}
-
-    /* -------- Panneau -------- */
-    .panel{background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:16px}
-    .panel h2{margin-bottom:12px;font-size:18px}
-    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .form-grid .full{grid-column:1/-1}
-    label{font-size:13px;color:#334155;margin:8px 0 6px;display:block;font-weight:600}
-    input,select{
-      width:100%;padding:14px 12px;border:1px solid #d1d5db;border-radius:12px;
-      font-size:15px;background:#f9fafb;color:#111827;outline:none
-    }
-    input:focus,select:focus{border-color:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.25)}
-    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-    .btn{border:0;border-radius:12px;padding:10px 16px;font-weight:700;background:var(--red);color:#fff;cursor:pointer}
-    .btn.export{background:var(--accent)}
-    /* petit style pour la case Enfant */
-    .inline{display:flex;align-items:center;gap:10px;margin-top:2px}
-    .inline input[type="checkbox"]{width:18px;height:18px}
-
-    /* -------- Preview TV -------- */
-    .preview{display:flex;justify-content:center;align-items:flex-start;padding:12px}
-    .tv{position:relative;background:#0b0e12;border-radius:14px;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.35);max-width:100%}
-    .tv:after{content:"";position:absolute;bottom:-26px;left:50%;width:140px;height:20px;background:#0b0e12;border-radius:10px 10px 4px 4px;transform:translateX(-50%)}
-    #posterScaleWrap{transform-origin:top left;display:block;}
-
-    /* -------- Poster -------- */
-    .stage{
-      position:relative;overflow:visible;background:var(--bg);border:2px solid var(--star);border-radius:12px;
-      display:flex;justify-content:center;align-items:center;z-index:0;width:var(--poster-w);height:var(--poster-h);
+    
+    body{
+      font-family:'Inter',sans-serif;
+      color:var(--ink);
+      background:linear-gradient(180deg,#fbfaf8,#f3efe8);
+      min-height:100vh;
+      display:flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: hidden;
+      position: relative;
     }
 
-    /* Rosaces */
-    .rosette-bl,.rosette-br{
-      position:absolute;top:50%;width:260px;height:auto;opacity:.9;filter:brightness(.9) contrast(1.05);
-      pointer-events:none;transform:translateY(-50%);z-index:1
+    /* Décors d'arrière-plan (les mêmes que les affiches) */
+    .bg-decor {
+      position: absolute;
+      width: 400px;
+      opacity: 0.05;
+      pointer-events: none;
+      z-index: 0;
     }
-    .rosette-bl{left:-110px}
-    .rosette-br{right:-110px}
+    .bg-left { top: -100px; left: -100px; transform: rotate(-45deg); }
+    .bg-right { bottom: -100px; right: -100px; transform: rotate(135deg); }
 
-    /* Contenu centré */
-    .content{
-      position:relative;z-index:2;text-align:center;max-width:1000px;margin:0 auto;
-      padding:72px 140px 96px 140px;
-      display:flex;flex-direction:column;justify-content:center;min-height:100%;
+    /* Conteneur Principal */
+    .container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 900px;
+      text-align: center;
     }
 
-    /* Typo */
-    .top-ar{font-family:Amiri,serif;font-size:48px;margin:0 0 16px;direction:rtl;color:#1b2a44}
-    .headline{font-size:21px;margin:12px 0 14px;letter-spacing:.3px;color:#0c445c}
-    .name{font-size:54px;color:var(--gold);font-weight:800;margin:16px 0}
-    .duaa{font-size:22px;margin:8px 0 20px;color:#0f2b3b}
-    .when{font-size:22px;margin:18px 0;color:#0c445c}
-    .mosquee{font-weight:800;font-size:24px;color:#8b6c2a;margin-top:10px}
-    .address{opacity:.95;font-weight:600;font-size:20px}
-    .burial{color:var(--gold);font-weight:600;font-size:18px;margin-top:6px;font-style:italic;}
-    .footer-ar{font-family:Amiri,serif;font-size:26px;margin-top:22px}
+    /* En-tête */
+    .header {
+      margin-bottom: 50px;
+      animation: fadeInDown 0.8s ease-out;
+    }
+    
+    .bismillah {
+      font-family: 'Amiri', serif;
+      font-size: 32px;
+      color: var(--gold);
+      margin-bottom: 10px;
+    }
 
-    /* Contact */
-    .contact{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:14px;font-weight:400;color:#1f2937;opacity:.7}
+    .main-title {
+      font-size: 36px;
+      font-weight: 900;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
 
-    /* Logo (réglable) */
-    .logo img{position:absolute;left:20px;top:var(--logo-top);width:80px;height:auto;object-fit:contain;opacity:.9}
+    .subtitle {
+      font-size: 16px;
+      color: #64748b;
+      font-weight: 500;
+    }
 
-    /* -------- Mobile -------- */
-    @media (max-width:640px){
-      .panel{position:static;}
-      .form-grid{grid-template-columns:1fr}
-      input,select{padding:16px 14px;font-size:17px;border:1.5px solid #cbd5e1;background:#fff}
-      .btn{padding:12px 18px;font-size:16px}
-      .preview{padding:8px}
-      .tv{padding:8px;border-radius:10px}
-      .content{ padding:60px 120px 90px 120px; }
+    /* Grille des Cartes */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-top: 20px;
+    }
+
+    /* Style des Cartes */
+    .card {
+      background: var(--white);
+      border-radius: 20px;
+      padding: 40px 30px;
+      text-decoration: none;
+      color: var(--ink);
+      box-shadow: 0 10px 30px rgba(12, 68, 92, 0.08);
+      border: 2px solid transparent;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    /* Effet Hover */
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(12, 68, 92, 0.15);
+      border-color: rgba(139, 108, 42, 0.3);
+    }
+    
+    .card:active {
+      transform: scale(0.98);
+    }
+
+    /* Icônes SVG */
+    .icon-circle {
+      width: 90px;
+      height: 90px;
+      background: #f8fafc;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 25px;
+      transition: background 0.3s;
+    }
+    
+    .card:hover .icon-circle {
+      background: #f0f9ff;
+    }
+
+    .card svg {
+      width: 45px;
+      height: 45px;
+      fill: var(--accent);
+      transition: fill 0.3s;
+    }
+    
+    .card:hover svg {
+      fill: var(--gold);
+    }
+
+    /* Textes de la carte */
+    .card h3 {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      color: var(--accent);
+    }
+
+    .card p {
+      font-size: 14px;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    /* Flèche action */
+    .action-arrow {
+      margin-top: 25px;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.8;
+      transition: gap 0.2s;
+    }
+    
+    .card:hover .action-arrow {
+      gap: 10px;
+      opacity: 1;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .cards-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+      .main-title { font-size: 28px; }
+      .card { padding: 30px 20px; }
+    }
+
+    /* Animation d'entrée */
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Footer */
+    footer {
+      margin-top: 60px;
+      font-size: 12px;
+      color: #94a3b8;
+      font-weight: 500;
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <section class="panel">
-      <h2>Paramètres</h2>
-      <div class="form-grid">
-        <div class="full"><label>Nom</label><input id="nom" value="NOM DE FAMILLE" /></div>
-        <div><label>Prénom</label><input id="prenom" value="Prénom" /></div>
 
-        <div>
-          <label>Sexe</label>
-          <select id="sexe">
-            <option value="H">Homme</option>
-            <option value="F">Femme</option>
-          </select>
-          <!-- Nouvelle case à cocher ENFANT -->
-          <div class="inline">
-            <input type="checkbox" id="enfant" />
-            <label for="enfant" style="margin:0;font-weight:600;">Enfant</label>
-          </div>
-        </div>
+  <img src="https://i.ibb.co/CK0STnWk/image.png" class="bg-decor bg-left" alt="" />
+  <img src="https://i.ibb.co/zhNcJY5m/image.png" class="bg-decor bg-right" alt="" />
 
-        <div><label>Date (jj/mm/aaaa)</label><input id="date" type="date" /></div>
-        <div><label>Prière</label><select id="priere"><option>Dohr</option><option>Asr</option><option>Maghrib</option><option>Isha</option><option>Fajr</option></select></div>
-        <div class="full"><label>Mosquée</label><input id="mosquee" value="El-Mohsinine de Canteleu" /></div>
-        <div class="full"><label>Adresse</label><input id="adresse" value="36 Anc. Rte de Duclair, 76380 Canteleu" /></div>
-        <div class="full">
-          <label>Lieu d’inhumation</label>
-          <input id="burial" placeholder="au Maroc, en Algérie, au Cimetière du Mont-Gargan" />
-        </div>
-      </div>
-      <div class="row">
-        <button class="btn" id="resetAll">Réinitialiser</button>
-        <button class="btn export" id="exportPng">Exporter en PNG</button>
-      </div>
-    </section>
+  <div class="container">
+    
+    <header class="header">
+      <div class="bismillah">بسم الله الرحمن الرحيم</div>
+      <h1 class="main-title">Générateur d'Affiches</h1>
+      <p class="subtitle">Sélectionnez l'outil que vous souhaitez utiliser</p>
+    </header>
 
-    <section class="preview">
-      <div class="tv" id="tvWrap">
-        <div id="posterScaleWrap">
-          <div id="posterA4" class="stage A4">
-            <!-- Rosettes -->
-            <img class="rosette-bl" src="https://i.ibb.co/CK0STnWk/image.png" crossorigin="anonymous" alt="">
-            <img class="rosette-br" src="https://i.ibb.co/zhNcJY5m/image.png" crossorigin="anonymous" alt="">
-            <!-- Contenu -->
-            <div class="content">
-              <div class="logo"><img src="https://i.ibb.co/99F9yKyK/image.png" alt="Logo Mosquée" crossorigin="anonymous"></div>
-              <h1 class="top-ar">إِنَّا لِلَّهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ</h1>
-              <!-- id ajouté pour modifier le texte de l’intro -->
-              <p class="headline" id="headlineA4">Une <strong>Salat Al-Janaza</strong> (prière funéraire) est organisée pour :</p>
-              <h2 class="name" id="fullnameA4">Monsieur Hicham ZAABOULI</h2>
-              <p class="duaa" id="duaaA4">Qu’Allah lui fasse miséricorde</p>
-              <div class="when" id="whenA4"></div>
-              <div class="mosquee" id="mosqueeA4"></div>
-              <div class="address" id="adresseA4"></div>
-              <div class="burial" id="burialA4"></div>
-              <div class="footer-ar">بارك الله فيكم</div>
-            </div>
-            <div class="contact" id="contactA4">mosquee.amcc@gmail.com | 02 35 07 26 22</div>
-          </div>
+    <div class="cards-grid">
+      
+      <a href="janaza.html" class="card">
+        <div class="icon-circle">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2,12 L22,12 C22,12 20,8 12,8 C4,8 2,12 2,12 Z" fill-opacity="0.2"/>
+            <path d="M22,14 L2,14 L2,12 L22,12 L22,14 Z M5,14 L5,17 M19,14 L19,17 M9,14 L9,17 M15,14 L15,17" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <path d="M7,8 C7,8 8,5 12,5 C16,5 17,8 17,8" stroke="currentColor" stroke-width="2" fill="none"/>
+          </svg>
         </div>
-      </div>
-    </section>
+        <h3>Annonce Janaza</h3>
+        <p>Créez une affiche pour annoncer une prière funéraire (Salat Janaza) avec les détails du défunt.</p>
+        <div class="action-arrow">
+          Créer une affiche <span>&rarr;</span>
+        </div>
+      </a>
+
+      <a href="collecte.html" class="card">
+        <div class="icon-circle">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+             <path d="M12,2 C12,2 14,4 14,6 C14,8 12,10 12,10 C12,10 10,8 10,6 C10,4 12,2 12,2 Z" fill="currentColor"/>
+             <path d="M16,15 C16,15 17,14 19,14 C21,14 22,15 22,17 L22,19 C22,19 18,22 12,22 C6,22 2,19 2,19 L2,17 C2,15 3,14 5,14 C7,14 8,15 8,15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+             <path d="M12,11 L12,16" stroke="currentColor" stroke-width="2" stroke-dasharray="2 2"/>
+          </svg>
+        </div>
+        <h3>Collecte Mosquée</h3>
+        <p>Générez une annonce pour la venue d'une mosquée invitée lors de la prière du Jumu'a.</p>
+        <div class="action-arrow">
+          Créer une annonce <span>&rarr;</span>
+        </div>
+      </a>
+
+    </div>
+
+    <footer>
+      &copy; 2024 Portail Mosquée - Outils de communication
+    </footer>
+
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script>
-    const $ = id => document.getElementById(id);
-    const POSTER_W = 1120, POSTER_H = 720;
-
-    function upper(s){ return (s||'').toLocaleUpperCase('fr-FR'); }
-    function parseDateOnly(val){ if(!val) return null; return new Date(`${val}T12:00:00`); }
-    function formatDateFRDateOnly(val){
-      const d=parseDateOnly(val); if(!d) return {weekday:'',date:''};
-      const weekday=upper(new Intl.DateTimeFormat('fr-FR',{weekday:'long'}).format(d));
-      const date=new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'long',year:'numeric'}).format(d).toUpperCase();
-      return {weekday,date};
-    }
-
-    function build(){
-      const nom = upper($("nom").value.trim());
-      const prenom = $("prenom").value.trim();
-      const sexe = $("sexe").value;
-      const isChild = $("enfant").checked;           // NEW
-      const priere = $("priere").value;
-      const dateVal = $("date").value;
-      const mosquee = $("mosquee").value.trim();
-      const adresse = $("adresse").value.trim();
-      const burial  = ($("burial").value || "").trim();
-
-      const {weekday, date} = formatDateFRDateOnly(dateVal);
-      let priereAff = priere; if(weekday === 'VENDREDI' && priere === 'Dohr') priereAff = 'Jumu‘a';
-
-      // Civilité : adulte vs enfant (seulement F → Mademoiselle ; H reste Monsieur)
-      const civilite = isChild ? (sexe === 'F' ? 'Mademoiselle' : 'Monsieur') : (sexe === 'F' ? 'Madame' : 'Monsieur');
-
-      // Headline : adulte vs enfant
-      if (isChild) {
-        const enfantTexte = (sexe === 'F') ? 'une <strong>petite fille</strong>' : 'un <strong>petit garçon</strong>';
-        $("headlineA4").innerHTML = `Une <strong>Salat Al-Janaza</strong> (prière funéraire) est organisée pour ${enfantTexte} :`;
-      } else {
-        $("headlineA4").innerHTML = `Une <strong>Salat Al-Janaza</strong> (prière funéraire) est organisée pour :`;
-      }
-
-      $("fullnameA4").textContent = `${civilite} ${prenom} ${nom}`;
-      $("duaaA4").textContent = "Qu’Allah lui fasse miséricorde";
-      $("whenA4").innerHTML = `La prière aura lieu le <strong>${weekday} ${date}</strong> après Salat <strong>${priereAff}</strong> à la Mosquée :`;
-      $("mosqueeA4").textContent = mosquee;
-      $("adresseA4").textContent = adresse;
-      $("burialA4").innerHTML  = burial ? `Lieu d’inhumation : <em>${burial}</em>` : "";
-    }
-
-    // Échelle responsive qui réserve la hauteur affichée
-    function fitPreview(){
-      const wrap = $("tvWrap"), scaleWrap = $("posterScaleWrap");
-      const available = Math.min(wrap.clientWidth - 20, window.innerWidth - 20);
-      const s = Math.min(available / POSTER_W, 1);
-      scaleWrap.style.transform = `scale(${s})`;
-      scaleWrap.style.width  = (POSTER_W * s) + 'px';
-      scaleWrap.style.height = (POSTER_H * s) + 'px';
-    }
-
-    // Réinitialiser
-    $("resetAll").addEventListener('click', () => {
-      $("nom").value = "";
-      $("prenom").value = "";
-      $("sexe").value = "H";
-      $("enfant").checked = false;                 // NEW
-      const d = new Date(); d.setDate(d.getDate()+1);
-      $("date").value = d.toISOString().slice(0,10);
-      $("priere").value = "Dohr";
-      $("mosquee").value = "";
-      $("adresse").value = "";
-      $("burial").value = "";
-      build(); fitPreview();
-    });
-
-    // Charger images + fonts
-    async function assetsReady(){
-      const imgs = Array.from(document.querySelectorAll('#posterA4 img'));
-      await Promise.all(imgs.map(img => img.complete ? Promise.resolve() :
-        new Promise(res => { img.onload = res; img.onerror = res; })));
-      if (document.fonts?.ready) { await document.fonts.ready; }
-    }
-
-    // Export identique PC / Mobile
-    $("exportPng").addEventListener('click', async () => {
-      build();
-      await assetsReady();
-      const wrap = $("posterScaleWrap");
-      const prevTransform = wrap.style.transform;
-      wrap.style.transform = "none";            // évite bug iOS
-      void $("posterA4").offsetHeight;          // reflow
-      const canvas = await html2canvas($("posterA4"), {
-        scale: 2, backgroundColor: null, useCORS: true
-      });
-      wrap.style.transform = prevTransform;
-
-      const link = document.createElement('a');
-      link.download = `affiche-janaza-${Date.now()}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    });
-
-    // Live build + fit
-    ['nom','prenom','sexe','enfant','date','priere','mosquee','adresse','burial'].forEach(id=>{
-      const el = $(id);
-      if (!el) return;
-      el.addEventListener('input', build);
-      el.addEventListener('change', build);
-    });
-
-    (function init(){
-      const d = new Date(); d.setDate(d.getDate()+1);
-      $("date").value = d.toISOString().slice(0,10);
-      build(); fitPreview();
-    })();
-    window.addEventListener('resize', fitPreview);
-    window.addEventListener('orientationchange', fitPreview);
-  </script>
 </body>
 </html>
