@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Générateur Collecte - Mosquées Roueannaises</title>
+  <title>Générateur Collecte - Mosquées Rouennaises</title>
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
   <style>
     :root{
       --bg:#f7f3ec; --ink:#1e2a3b; --gold:#8b6c2a; --accent:#0c445c; 
-      --bright-gold: #b48325; /* NOUVEAU DORÉ PLUS FONCÉ/RICHE */
+      --bright-gold: #b48325; 
       --poster-w:1120px; --poster-h:720px;
     }
     *{box-sizing:border-box;margin:0;padding:0}
@@ -30,13 +30,19 @@
     label { display: block; font-size: 11px; font-weight: 700; color: #555; margin-bottom: 4px; }
     input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; background: #f9f9f9; outline: none; }
     input:focus, select:focus { border-color: var(--accent); background: #fff; }
+    
+    /* CASE A COCHER */
+    .toggle-wrap { background: #eef2f6; padding: 10px; border-radius: 6px; display: flex; align-items: center; gap: 10px; border: 1px solid #dbeafe; }
+    .toggle-wrap input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+    .toggle-wrap label { margin: 0; cursor: pointer; font-size: 13px; color: var(--accent); }
+
     .btns { display: flex; gap: 10px; margin-top: 10px; }
     .btn { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; color: white; transition: 0.2s; font-size: 14px; }
     .btn-reset { background: #94a3b8; }
     .btn-down { background: var(--accent); }
     .btn:hover { opacity: 0.9; }
 
-    /* --- BOUTON RETOUR (NOUVEAU) --- */
+    /* --- BOUTON RETOUR --- */
     .back-link { display: inline-flex; align-items: center; gap: 8px; color: #64748b; text-decoration: none; font-weight: 600; font-size: 14px; margin-bottom: 10px; transition: color 0.2s; }
     .back-link:hover { color: var(--accent); }
     .back-link svg { width: 18px; height: 18px; fill: currentColor; }
@@ -49,50 +55,23 @@
 
     /* --- POSTER --- */
     #poster { width: 100%; height: 100%; position: relative; background: var(--bg); display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 60px; }
-
     .rosette { position: absolute; top: 50%; transform: translateY(-50%); width: 260px; opacity: 1; mix-blend-mode: normal; pointer-events: none; z-index: 10; }
     .rosette.left { left: -100px; }
     .rosette.right { right: -100px; }
-
     .mosque-logo { position: absolute; top: 35px; left: 40px; width: 90px; height: 90px; object-fit: contain; z-index: 15; display: none; }
     .mosque-logo.active { display: block; } 
-
     .content { width: 100%; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; z-index: 5; padding: 0 20px; }
 
-    /* --- MODIFICATIONS --- */
+    .poster-title { font-size: 28px; font-weight: 900; color: var(--gold); text-transform: uppercase; margin-bottom: 25px; line-height: 1.1; max-width: 80%; letter-spacing: 1px; }
+    .ar-greeting { font-family: 'Amiri', serif; font-size: 55px; color: var(--ink); margin-bottom: 40px; }
     
-    .poster-title {
-        font-size: 28px;
-        font-weight: 900; color: var(--gold);
-        text-transform: uppercase; margin-bottom: 25px; line-height: 1.1;
-        max-width: 80%; letter-spacing: 1px;
-    }
-
-    .ar-greeting {
-        font-family: 'Amiri', serif; 
-        font-size: 55px;
-        color: var(--ink);
-        margin-bottom: 40px;
-    }
-
-    /* Texte central élargi */
-    .poster-body-text {
-        font-size: 28px; color: var(--ink); line-height: 1.5;
-        max-width: 72% !important; /* <-- ÉLARGI ICI (72%) */
-        margin-bottom: 35px;
-    }
+    .poster-body-text { font-size: 28px; color: var(--ink); line-height: 1.5; max-width: 72% !important; margin-bottom: 35px; }
+    .poster-body-text strong { color: var(--bright-gold) !important; font-weight: 900; text-shadow: 0 1px 0 rgba(0,0,0,0.05); }
     
-    /* Variable en DORÉ PLUS FONCÉ */
-    .poster-body-text strong {
-        color: var(--bright-gold) !important; /* Utilise le nouveau doré */
-        font-weight: 900;
-        text-shadow: 0 1px 0 rgba(0,0,0,0.05);
-    }
+    .sub-text { font-size: 24px; margin-bottom:10px; color: var(--ink); max-width: 75%; line-height: 1.4; }
 
     .baraka { font-family: 'Amiri', serif; font-size: 42px; margin-top: 10px; color: #333; }
-    
     .footer { position: absolute; bottom: 15px; width: 100%; text-align: center; font-size: 14px; color: #1e2a3b; font-weight: 600; z-index: 20; opacity: 0.8; letter-spacing: 0.5px; }
-
   </style>
 </head>
 <body>
@@ -106,20 +85,29 @@
     </a>
 
     <div>
-      <h2>Détails de la Collecte</h2>
-      <div class="row">
-        <div class="full">
-            <label>Nom de la Mosquée Invitée</label>
-            <input id="guestName" placeholder="ex: Grande Mosquée de Paris">
-        </div>
-        <div class="full">
-            <label>Ville / Département (Invitée)</label>
-            <input id="guestCity" placeholder="ex: 75005 Paris">
-        </div>
-        <div class="full">
-          <label>Date du Vendredi (Jumu'a)</label>
-          <input type="date" id="date">
-        </div>
+      <h2>Type de Collecte</h2>
+      <div class="toggle-wrap">
+        <input type="checkbox" id="internalCollecte">
+        <label for="internalCollecte">Collecte pour notre mosquée (Interne)</label>
+      </div>
+
+      <div id="guestInfoBlock" style="margin-top: 15px;">
+          <div class="full" style="margin-bottom: 10px;">
+              <label>Nom de la Mosquée Invitée</label>
+              <input id="guestName" placeholder="ex: Grande Mosquée de Paris">
+          </div>
+          <div class="full">
+              <label>Ville / Département (Invitée)</label>
+              <input id="guestCity" placeholder="ex: 75005 Paris">
+          </div>
+      </div>
+    </div>
+    
+    <div>
+      <h2>Détails</h2>
+      <div class="full">
+        <label>Date du Vendredi (Jumu'a)</label>
+        <input type="date" id="date">
       </div>
     </div>
     
@@ -153,7 +141,6 @@
         <div id="poster">
           <img class="rosette left" src="https://i.ibb.co/CK0STnWk/image.png" crossorigin="anonymous">
           <img class="rosette right" src="https://i.ibb.co/zhNcJY5m/image.png" crossorigin="anonymous">
-          
           <img id="logo-canteleu" class="mosque-logo" src="https://i.ibb.co/99F9yKyK/image.png" crossorigin="anonymous">
           <img id="logo-rouen" class="mosque-logo" src="https://i.ibb.co/C5JQqnW1/image-removebg-preview-1.png" crossorigin="anonymous">
           <img id="logo-stetienne" class="mosque-logo" src="https://i.ibb.co/zhc2rYMP/image-removebg-preview-2.png" crossorigin="anonymous">
@@ -164,10 +151,10 @@
             <div class="ar-greeting">السلام عليكم ورحمة الله وبركاته</div>
             
             <p id="mainText" class="poster-body-text">
-                Nous vous informons que <strong>[Mosquée]</strong> viendra faire une collecte dans notre mosquée le vendredi <strong>[date]</strong>, à l’occasion de la prière du Jumu‘a.
+                Nous vous informons que <strong>[Mosquée]</strong> viendra faire une collecte...
             </p>
             
-            <p class="poster-body-text" style="font-size:24px; margin-bottom:10px;">
+            <p id="subText" class="poster-body-text sub-text">
                 Nous vous invitons à soutenir ce projet selon vos moyens.
             </p>
 
@@ -189,7 +176,6 @@
     stetienne: { nom: "Mosquée Yahya\n(Saint-Etienne-du-Rouvray)", adresse: "29 Rue Marius Vallée, 76800 Saint-Étienne-du-Rouvray", tel: "+33 2 35 64 62 23", email: "acms76800@gmail.com" },
     autre: { nom: "Mosquée...", adresse: "", tel: "", email: "" }
   };
-
   const POSTER_W = 1120; const POSTER_H = 720;
   const $ = id => document.getElementById(id);
 
@@ -197,7 +183,6 @@
     const key = $("mosqueeSelect").value;
     const info = DATA[key];
     if(info) { $("tel").value = info.tel; $("email").value = info.email; }
-
     document.querySelectorAll('.mosque-logo').forEach(img => img.classList.remove('active'));
     if(key === 'canteleu') $("logo-canteleu").classList.add('active');
     else if(key === 'rouen') $("logo-rouen").classList.add('active');
@@ -205,13 +190,14 @@
     render();
   }
 
-  function render() {
-    const guestName = $("guestName").value.trim() || "La mosquée invitée";
-    const guestCity = $("guestCity").value.trim();
-    
-    let guestFullName = guestName;
-    if(guestCity) guestFullName += ` (${guestCity})`;
+  function toggleGuestInputs() {
+    const isInternal = $("internalCollecte").checked;
+    const guestBlock = $("guestInfoBlock");
+    guestBlock.style.display = isInternal ? 'none' : 'block';
+    render();
+  }
 
+  function render() {
     const dateInput = $("date").value;
     let dateStr = "...";
     if(dateInput) {
@@ -220,28 +206,39 @@
       dateStr = new Intl.DateTimeFormat('fr-FR', {day:'numeric', month:'long', year:'numeric'}).format(userTime);
     }
 
-    $("mainText").innerHTML = `Nous vous informons que <strong>${guestFullName.toUpperCase()}</strong> viendra faire une collecte dans notre mosquée le vendredi <strong>${dateStr}</strong>, à l’occasion de la prière du Jumu‘a.`;
+    const isInternal = $("internalCollecte").checked;
+
+    if (isInternal) {
+      // MODE INTERNE : On affiche "NOTRE MOSQUÉE" en dur
+      $("mainText").innerHTML = `Nous vous informons qu'une collecte sera organisée pour <strong>NOTRE MOSQUÉE</strong> le vendredi <strong>${dateStr}</strong>, à l’occasion de la prière du Jumu‘a.`;
+      
+      // Message spécifique interne
+      $("subText").innerHTML = `Cette collecte permet de financer les frais de la mosquée et les projets de la mosquée et de notre communauté.`;
+
+    } else {
+      // MODE INVITÉ
+      const guestName = $("guestName").value.trim() || "La mosquée invitée";
+      const guestCity = $("guestCity").value.trim();
+      let guestFullName = guestName;
+      if(guestCity) guestFullName += ` (${guestCity})`;
+
+      $("mainText").innerHTML = `Nous vous informons que <strong>${guestFullName.toUpperCase()}</strong> viendra faire une collecte dans notre mosquée le vendredi <strong>${dateStr}</strong>, à l’occasion de la prière du Jumu‘a.`;
+      
+      $("subText").innerHTML = `Nous vous invitons à soutenir ce projet selon vos moyens.`;
+    }
 
     $("contactDisplay").textContent = `${$("tel").value} | ${$("email").value}`;
   }
 
   function fit() {
-    const container = $("previewContainer");
-    const frame = $("tvFrame");
-    const wrapper = $("scale-wrapper");
-    const availableW = container.clientWidth - 40; 
-    let scale = availableW / POSTER_W;
-    if(scale > 1) scale = 1;
-    wrapper.style.transform = `scale(${scale})`;
-    const finalW = POSTER_W * scale; const finalH = POSTER_H * scale;
-    frame.style.width = (finalW + 32) + "px"; frame.style.height = (finalH + 32) + "px";
+    const container = $("previewContainer"); const frame = $("tvFrame"); const wrapper = $("scale-wrapper");
+    const availableW = container.clientWidth - 40; let scale = availableW / POSTER_W; if(scale > 1) scale = 1;
+    wrapper.style.transform = `scale(${scale})`; const finalW = POSTER_W * scale; const finalH = POSTER_H * scale; frame.style.width = (finalW + 32) + "px"; frame.style.height = (finalH + 32) + "px";
   }
 
   window.addEventListener('load', () => {
-    const d = new Date(); 
-    d.setDate(d.getDate() + (5 + 7 - d.getDay()) % 7);
+    const d = new Date(); d.setDate(d.getDate() + (5 + 7 - d.getDay()) % 7);
     $("date").value = d.toISOString().split('T')[0];
-    
     $("mosqueeSelect").value = "canteleu";
     updateFromMosqueSelect();
     setTimeout(fit, 100);
@@ -250,43 +247,27 @@
 
   document.querySelectorAll('input, select').forEach(el => {
     if(el.id === 'mosqueeSelect') el.addEventListener('change', updateFromMosqueSelect);
+    else if(el.id === 'internalCollecte') el.addEventListener('change', toggleGuestInputs);
     else el.addEventListener('input', render);
   });
 
   $("resetBtn").onclick = () => location.reload();
 
   $("downloadBtn").onclick = async () => {
-    const btn = $("downloadBtn");
-    const originalText = btn.textContent;
-    btn.textContent = "Génération...";
-    
-    const imgs = Array.from(document.querySelectorAll("#poster img"));
-    await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })));
-    
-    const wrapper = $("scale-wrapper");
-    const frame = $("tvFrame");
-    const oldTransform = wrapper.style.transform;
-    const oldFrameW = frame.style.width; const oldFrameH = frame.style.height;
-
-    wrapper.style.transform = "scale(1)";
-    frame.style.width = (POSTER_W + 32) + "px"; frame.style.height = (POSTER_H + 32) + "px";
-    
+    const btn = $("downloadBtn"); const originalText = btn.textContent; btn.textContent = "Génération...";
+    const imgs = Array.from(document.querySelectorAll("#poster img")); await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })));
+    const wrapper = $("scale-wrapper"); const frame = $("tvFrame"); const oldTransform = wrapper.style.transform; const oldFrameW = frame.style.width; const oldFrameH = frame.style.height;
+    wrapper.style.transform = "scale(1)"; frame.style.width = (POSTER_W + 32) + "px"; frame.style.height = (POSTER_H + 32) + "px";
     await new Promise(r => setTimeout(r, 200));
-
-    try {
-      const canvas = await html2canvas($("poster"), { scale: 2, useCORS: true, backgroundColor: null });
-      const a = document.createElement('a');
-      let safeName = $("guestName").value.trim().replace(/[^a-z0-9]/gi, '_').toLowerCase() || "collecte";
-      a.download = `Affiche_Collecte_${safeName}.png`;
-      a.href = canvas.toDataURL("image/png");
-      a.click();
-    } catch(err) {
-      alert("Erreur export : " + err);
-    } finally {
-      wrapper.style.transform = oldTransform;
-      frame.style.width = oldFrameW; frame.style.height = oldFrameH;
-      btn.textContent = originalText;
-    }
+    try { 
+      const canvas = await html2canvas($("poster"), { scale: 2, useCORS: true, backgroundColor: null }); 
+      const a = document.createElement('a'); 
+      let isInt = $("internalCollecte").checked;
+      let safeName = isInt ? "interne" : ($("guestName").value.trim().replace(/[^a-z0-9]/gi, '_').toLowerCase() || "collecte");
+      a.download = `Affiche_Collecte_${safeName}.png`; 
+      a.href = canvas.toDataURL("image/png"); 
+      a.click(); 
+    } catch(err) { alert("Erreur export : " + err); } finally { wrapper.style.transform = oldTransform; frame.style.width = oldFrameW; frame.style.height = oldFrameH; btn.textContent = originalText; }
   };
 </script>
 </body>
