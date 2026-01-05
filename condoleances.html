@@ -3,19 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Générateur Annonce - Mosquées Roueannaises</title>
+  <title>Générateur Condoléances - Mosquées Rouennaises</title>
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
   <style>
     :root{
       --bg:#f7f3ec; --ink:#1e2a3b; --gold:#8b6c2a; --accent:#0c445c;
       --bright-gold:#b48325;
-      --orange:#f59e0b;              /* ✅ couleur effacer */
+      --orange:#f59e0b; /* ✅ couleur Effacer */
       --poster-w:1120px; --poster-h:720px;
     }
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Inter',sans-serif;color:var(--ink);background:#f0f2f5;min-height:100vh;padding:20px}
 
-    /* --- LAYOUT --- */
     .app { display: flex; flex-direction: column; gap: 20px; max-width: 1600px; margin: 0 auto; }
     @media (min-width: 1100px) {
       .app { flex-direction: row; align-items: flex-start; }
@@ -23,15 +22,17 @@
       .preview-container { flex-grow: 1; }
     }
 
-    /* --- PANEL --- */
     .panel { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 15px; }
     h2 { font-size: 13px; text-transform: uppercase; color: var(--accent); border-left: 4px solid var(--gold); padding-left: 10px; margin-bottom: 5px; font-weight: 800; }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .full { grid-column: 1 / -1; }
     label { display: block; font-size: 11px; font-weight: 700; color: #555; margin-bottom: 4px; }
-    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; background: #f9f9f9; outline: none; font-family: inherit; }
-    textarea { resize: vertical; min-height: 120px; }
-    input:focus, select:focus, textarea:focus { border-color: var(--accent); background: #fff; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; background: #f9f9f9; outline: none; font-family: inherit; }
+    input:focus, select:focus { border-color: var(--accent); background: #fff; }
+
+    .toggle-wrap { background: #eef2f6; padding: 10px; border-radius: 6px; display: flex; align-items: center; gap: 10px; border: 1px solid #dbeafe; }
+    .toggle-wrap input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+    .toggle-wrap label { margin: 0; cursor: pointer; font-size: 13px; color: var(--accent); }
 
     .btns { display: flex; gap: 10px; margin-top: 10px; }
     .btn { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; color: white; transition: 0.2s; font-size: 14px; }
@@ -39,28 +40,72 @@
     .btn-down { background: var(--accent); }
     .btn:hover { opacity: 0.9; }
 
-    /* --- BOUTON RETOUR --- */
     .back-link { display: inline-flex; align-items: center; gap: 8px; color: #64748b; text-decoration: none; font-weight: 600; font-size: 14px; margin-bottom: 10px; transition: color 0.2s; }
     .back-link:hover { color: var(--accent); }
     .back-link svg { width: 18px; height: 18px; fill: currentColor; }
 
-    /* --- PREVIEW --- */
     .preview-container { display: flex; justify-content: center; align-items: flex-start; background: #e2e8f0; border-radius: 12px; padding: 20px; min-height: 500px; overflow: hidden; }
     .tv-frame { position: relative; background: #111; padding: 16px; border-radius: 16px; box-shadow: 0 30px 60px rgba(0,0,0,0.4); display: block; margin: 0 auto; }
     .tv-stand { position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); width: 120px; height: 24px; background: #222; border-radius: 0 0 10px 10px; z-index: 0; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
     #scale-wrapper { width: var(--poster-w); height: var(--poster-h); background: white; transform-origin: top left; overflow: hidden; }
 
-    /* --- POSTER --- */
-    #poster { width: 100%; height: 100%; position: relative; background: var(--bg); display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 60px; }
+    #poster { width: 100%; height: 100%; position: relative; background: var(--bg); display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 55px; }
     .rosette { position: absolute; top: 50%; transform: translateY(-50%); width: 260px; opacity: 1; mix-blend-mode: normal; pointer-events: none; z-index: 10; }
     .rosette.left { left: -100px; }
     .rosette.right { right: -100px; }
     .mosque-logo { position: absolute; top: 35px; left: 40px; width: 90px; height: 90px; object-fit: contain; z-index: 15; display: none; }
     .mosque-logo.active { display: block; }
-    .content { width: 100%; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; z-index: 5; padding: 0 40px; }
 
-    .poster-main-title { font-size: 50px; font-weight: 900; color: var(--bright-gold); text-transform: uppercase; margin-bottom: 40px; line-height: 1.1; max-width: 80%; text-shadow: 0 2px 0 rgba(0,0,0,0.05); letter-spacing: 1px; }
-    .poster-message-body { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 32px; color: var(--ink); line-height: 1.5; max-width: 60% !important; white-space: pre-wrap; }
+    .content {
+      width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      position: relative;
+      z-index: 5;
+      padding: 0 40px;
+      padding-top: 62px;
+    }
+
+    .ar-title {
+      font-family: 'Amiri', serif;
+      font-size: 52px;
+      color: #1b2a44;
+      margin-bottom: 26px;
+      line-height: 1.2;
+    }
+
+    .body-text {
+      font-size: 26px;
+      color: var(--ink);
+      line-height: 1.65;
+      max-width: 68% !important;
+      margin-top: 0px;
+    }
+    .body-text strong { color: var(--bright-gold) !important; font-weight: 900; text-shadow: 0 1px 0 rgba(0,0,0,0.05); }
+
+    .spacer { height: 26px; }
+
+    .duaa-fr {
+      font-family: 'Inter', sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: #6b7280;
+      font-style: italic;
+      max-width: 72%;
+      line-height: 1.55;
+    }
+
+    .duaa-ar {
+      font-family: 'Amiri', serif;
+      font-size: 32px;
+      color: #555;
+      line-height: 1.3;
+      max-width: 78%;
+    }
+
     .footer { position: absolute; bottom: 15px; width: 100%; text-align: center; font-size: 14px; color: #1e2a3b; font-weight: 600; z-index: 20; opacity: 0.8; letter-spacing: 0.5px; }
   </style>
 </head>
@@ -87,20 +132,47 @@
     </div>
 
     <div>
-      <h2>Message</h2>
-      <div class="full" style="margin-bottom:10px;">
-        <label>Titre de l'annonce</label>
-        <input id="titreInput" placeholder="ex: INFO TRAVAUX, AÏD MUBARAK, CONFÉRENCE...">
+      <h2>Famille & Défunt(e)</h2>
+
+      <div class="toggle-wrap">
+        <input type="checkbox" id="enfant">
+        <label for="enfant">C'est un enfant (Le Petit / La Petite)</label>
       </div>
-      <div class="full">
-        <label>Texte de l'annonce</label>
-        <textarea id="messageInput" placeholder="Écrivez votre message ici..."></textarea>
+
+      <div class="full" style="margin-top:10px;">
+        <label>Nom de la famille</label>
+        <input id="familyName" placeholder="ex: BENALI">
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div class="full">
+          <label>Prénom du défunt</label>
+          <input id="prenom" placeholder="ex: Mohammed">
+        </div>
+        <div class="full">
+          <label>Nom du défunt</label>
+          <input id="nom" placeholder="ex: AL-ALAMI">
+        </div>
+        <div>
+          <label>Sexe</label>
+          <select id="sexe">
+            <option value="H">Homme</option>
+            <option value="F">Femme</option>
+          </select>
+        </div>
+        <div>
+          <label>Décédé le</label>
+          <input type="date" id="date">
+        </div>
       </div>
     </div>
 
     <div>
       <h2>Contact (Bas de page)</h2>
-      <div class="row"><div><label>Tél</label><input id="tel"></div><div><label>Email</label><input id="email"></div></div>
+      <div class="row">
+        <div><label>Tél</label><input id="tel"></div>
+        <div><label>Email</label><input id="email"></div>
+      </div>
     </div>
 
     <div class="btns">
@@ -116,15 +188,35 @@
         <div id="poster">
           <img class="rosette left" src="https://i.ibb.co/CK0STnWk/image.png" crossorigin="anonymous">
           <img class="rosette right" src="https://i.ibb.co/zhNcJY5m/image.png" crossorigin="anonymous">
+
           <img id="logo-canteleu" class="mosque-logo" src="https://i.ibb.co/99F9yKyK/image.png" crossorigin="anonymous">
           <img id="logo-rouen" class="mosque-logo" src="https://i.ibb.co/C5JQqnW1/image-removebg-preview-1.png" crossorigin="anonymous">
           <img id="logo-stetienne" class="mosque-logo" src="https://i.ibb.co/zhc2rYMP/image-removebg-preview-2.png" crossorigin="anonymous">
           <img id="logo-autre" class="mosque-logo" src="" style="display:none">
 
           <div class="content">
-            <h1 id="posterTitle" class="poster-main-title">TITRE DE L'ANNONCE</h1>
-            <div id="posterBody" class="poster-message-body">Veuillez saisir votre message dans le formulaire à gauche.</div>
+            <div class="ar-title">إِنَّا لِلَّهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ</div>
+
+            <div class="spacer"></div>
+
+            <p id="mainText" class="body-text">
+              La <strong>[Mosquée]</strong> et son bureau, tient à présenter ses condoléances à la famille <strong>[NOM DE LA FAMILLE]</strong>.
+              Pour la perte de <strong>Monsieur</strong> <strong>[Prénom]</strong> <strong>[NOM]</strong> décédé le <strong>[Date]</strong>.
+            </p>
+
+            <div class="spacer"></div>
+
+            <div class="duaa-fr">
+              Qu’Allah lui fasse miséricorde, lui pardonne, l’élève en degrés et accorde à sa famille patience et réconfort.
+            </div>
+
+            <div class="spacer"></div>
+
+            <div class="duaa-ar">
+              اللهم اغفر له وارحمه وعافه واعف عنه واجعله من اهل الجنة
+            </div>
           </div>
+
           <div id="contactDisplay" class="footer">00 00 00 00 00 | email@example.com</div>
         </div>
       </div>
@@ -144,6 +236,17 @@
   const POSTER_W = 1120; const POSTER_H = 720;
   const $ = id => document.getElementById(id);
 
+  function capitalize(str) {
+    return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : "";
+  }
+
+  function formatDateFR(dateInput) {
+    if(!dateInput) return "...";
+    const d = new Date(dateInput);
+    const userTime = new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+    return new Intl.DateTimeFormat('fr-FR', { day:'numeric', month:'long', year:'numeric' }).format(userTime);
+  }
+
   function updateFromMosqueSelect() {
     const key = $("mosqueeSelect").value;
     const info = DATA[key];
@@ -160,20 +263,39 @@
   }
 
   function render() {
-    const titre = $("titreInput").value.trim() || "TITRE DE L'ANNONCE";
-    const message = $("messageInput").value.trim() || "Votre message s'affichera ici...";
+    const key = $("mosqueeSelect").value;
+    const mosqueName = (key === "autre") ? "Mosquée" : DATA[key].nom.replace(/\n/g, " ");
 
-    $("posterTitle").textContent = titre;
-    $("posterBody").textContent = message;
+    const family = ($("familyName").value.trim() || "[NOM DE LA FAMILLE]").toUpperCase();
+    const prenom = capitalize($("prenom").value.trim()) || "[Prénom]";
+    const nom = ($("nom").value.trim() || "[NOM]").toUpperCase();
 
-    $("contactDisplay").textContent =
-      `${$("tel").value || "00 00 00 00 00"} | ${$("email").value || "email@example.com"}`;
+    const sexe = $("sexe").value; // H / F
+    const isChild = $("enfant").checked;
+
+    // --- FIX GRAMMAIRE : de / du / de la ---
+    let prefix = "de";
+    let civil = (sexe === "F") ? "Madame" : "Monsieur";
+
+    if (isChild) {
+      if (sexe === "F") { prefix = "de la"; civil = "Petite"; }
+      else { prefix = "du"; civil = "Petit"; }
+    }
+
+    const dateStr = formatDateFR($("date").value);
+
+    $("mainText").innerHTML =
+      `La <strong>${mosqueName}</strong> et son bureau, tient à présenter ses condoléances à la famille <strong>${family}</strong>. ` +
+      `Pour la perte ${prefix} <strong>${civil} ${prenom} ${nom}</strong> décédé le <strong>${dateStr}</strong>.`;
+
+    $("contactDisplay").textContent = `${$("tel").value || "00 00 00 00 00"} | ${$("email").value || "email@example.com"}`;
   }
 
   function fit() {
     const container = $("previewContainer");
     const frame = $("tvFrame");
     const wrapper = $("scale-wrapper");
+
     const availableW = container.clientWidth - 40;
     let scale = availableW / POSTER_W;
     if(scale > 1) scale = 1;
@@ -185,33 +307,39 @@
     frame.style.height = (finalH + 32) + "px";
   }
 
-  /* ✅ Effacer : reset propre sans reload */
+  /* ✅ Effacer : reset complet sans recharger la page */
   function resetAll() {
-    // Message
-    $("titreInput").value = "";
-    $("messageInput").value = "";
+    // Réinitialise champs utilisateur
+    $("enfant").checked = false;
+    $("familyName").value = "";
+    $("prenom").value = "";
+    $("nom").value = "";
+    $("sexe").value = "H";
 
-    // Mosquée + contact auto
+    // Date : aujourd'hui (comme ton load)
+    const d = new Date();
+    $("date").value = d.toISOString().split('T')[0];
+
+    // Mosquée : valeur par défaut + tel/email auto
     $("mosqueeSelect").value = "canteleu";
-    updateFromMosqueSelect(); // remplira tel/email + render()
-
-    // Si tu veux forcer un placeholder "neutre"
-    $("posterTitle").textContent = "TITRE DE L'ANNONCE";
-    $("posterBody").textContent = "Veuillez saisir votre message dans le formulaire à gauche.";
-    $("contactDisplay").textContent = `${$("tel").value} | ${$("email").value}`;
+    updateFromMosqueSelect(); // remplit tel/email + render()
 
     fit();
   }
 
   window.addEventListener('load', () => {
+    const d = new Date();
+    $("date").value = d.toISOString().split('T')[0];
+
     $("mosqueeSelect").value = "canteleu";
     updateFromMosqueSelect();
     setTimeout(fit, 100);
   });
   window.addEventListener('resize', fit);
 
-  document.querySelectorAll('input, select, textarea').forEach(el => {
+  document.querySelectorAll('input, select').forEach(el => {
     if(el.id === 'mosqueeSelect') el.addEventListener('change', updateFromMosqueSelect);
+    else if(el.id === 'enfant') el.addEventListener('change', render);
     else el.addEventListener('input', render);
   });
 
@@ -240,8 +368,10 @@
     try {
       const canvas = await html2canvas($("poster"), { scale: 2, useCORS: true, backgroundColor: null });
       const a = document.createElement('a');
-      const safeName = ($("titreInput").value.trim().replace(/[^a-z0-9]/gi, '_').toLowerCase() || "annonce");
-      a.download = `Affiche_Annonce_${safeName}.png`;
+
+      const safeFamily = ($("familyName").value.trim().replace(/[^a-z0-9]/gi, '_').toLowerCase() || "famille");
+      const safeNom = ($("nom").value.trim().replace(/[^a-z0-9]/gi, '_').toLowerCase() || "deces");
+      a.download = `Affiche_Condoleances_${safeFamily}_${safeNom}.png`;
       a.href = canvas.toDataURL("image/png");
       a.click();
     } catch(err) {
